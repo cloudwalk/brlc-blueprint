@@ -1,0 +1,22 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: brlc-balance-freezer
+  description: Balance freezer smart contracts
+  annotations:
+    github.com/project-slug: cloudwalk/brlc-balance-freezer
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - solidity
+    - typescript
+    - blockchain
+    - smart-contract
+  links:
+    - url: https://github.com/cloudwalk/brlc-balance-freezer
+      title: Repository
+      icon: github
+spec:
+  type: smart-contract
+  system: Blockchain
+  lifecycle: production
+  owner: team-blockchain
