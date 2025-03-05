@@ -33,7 +33,10 @@ describe("Contract 'PausableExtUpgradeable'", async () => {
   });
 
   async function deployPausableExtMock(): Promise<{ pausableExtMock: Contract }> {
-    let pausableExtMock: Contract = await upgrades.deployProxy(pausableExtMockFactory);
+    let pausableExtMock: Contract = await upgrades.deployProxy(
+      pausableExtMockFactory,
+      { unsafeAllow: ["missing-initializer-call"] }
+    ) as Contract;
     await pausableExtMock.waitForDeployment();
     pausableExtMock = connect(pausableExtMock, deployer); // Explicitly specifying the initial account
     return { pausableExtMock };

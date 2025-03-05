@@ -42,7 +42,10 @@ describe("Contract 'RescuableUpgradeable'", async () => {
   });
 
   async function deployRescuableMock(): Promise<{ rescuableMock: Contract }> {
-    let rescuableMock: Contract = await upgrades.deployProxy(rescuableMockFactory);
+    let rescuableMock: Contract = await upgrades.deployProxy(
+      rescuableMockFactory,
+      { unsafeAllow: ["missing-initializer-call"] }
+    ) as Contract;
     await rescuableMock.waitForDeployment();
     rescuableMock = connect(rescuableMock, deployer); // Explicitly specifying the initial account
 

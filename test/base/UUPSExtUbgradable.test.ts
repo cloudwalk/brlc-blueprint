@@ -35,7 +35,11 @@ describe("Contracts 'UUPSExtUpgradeable'", async () => {
   });
 
   async function deployContract(): Promise<{ uupsExtension: Contract }> {
-    let uupsExtension: Contract = await upgrades.deployProxy(uupsExtensionFactory, [], { initializer: false });
+    let uupsExtension: Contract = await upgrades.deployProxy(
+      uupsExtensionFactory,
+      [],
+      { initializer: false }
+    ) as Contract;
     await uupsExtension.waitForDeployment();
     uupsExtension = connect(uupsExtension, deployer); // Explicitly specifying the initial account
 

@@ -40,7 +40,7 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
   });
 
   async function deployAccessControlExtMock(): Promise<{ accessControlExtMock: Contract }> {
-    let accessControlExtMock: Contract = await upgrades.deployProxy(accessControlExtMockFactory);
+    let accessControlExtMock: Contract = await upgrades.deployProxy(accessControlExtMockFactory) as Contract;
     await accessControlExtMock.waitForDeployment();
     accessControlExtMock = connect(accessControlExtMock, deployer); // Explicitly specifying the initial account
 

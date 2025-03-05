@@ -152,7 +152,11 @@ describe("Contracts 'BalanceFreezer'", async () => {
 
   async function deployContracts(): Promise<Fixture> {
     const tokenMock = await deployTokenMock();
-    let freezerContract: Contract = await upgrades.deployProxy(freezerContractFactory, [getAddress(tokenMock)]);
+    let freezerContract: Contract = await upgrades.deployProxy(
+      freezerContractFactory,
+      [getAddress(tokenMock)],
+      { unsafeAllow: ["missing-initializer", "missing-initializer-call"] }
+    ) as Contract;
     await freezerContract.waitForDeployment();
     freezerContract = connect(freezerContract, deployer); // Explicitly specifying the initial account
 
@@ -243,9 +247,11 @@ describe("Contracts 'BalanceFreezer'", async () => {
     });
 
     it("Is reverted if the passed token address is zero", async () => {
-      const anotherFreezerContract: Contract = await upgrades.deployProxy(freezerContractFactory, [], {
-        initializer: false
-      });
+      const anotherFreezerContract: Contract = await upgrades.deployProxy(
+        freezerContractFactory,
+        [],
+        { initializer: false, unsafeAllow: ["missing-initializer", "missing-initializer-call"] },
+      ) as Contract;
 
       await expect(
         anotherFreezerContract.initialize(ADDRESS_ZERO)
