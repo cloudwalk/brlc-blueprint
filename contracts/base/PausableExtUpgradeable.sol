@@ -9,12 +9,12 @@ import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
 /**
  * @title PausableExtUpgradeable base contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Extends the OpenZeppelin's {PausableUpgradeable} contract by adding the {PAUSER_ROLE} role.
- *
- * This contract is used through inheritance. It introduces the {PAUSER_ROLE} role that is allowed to
- * trigger the paused or unpaused state of the contract that is inherited from this one.
+ * @dev Extends the OpenZeppelin's {PausableUpgradeable} contract by adding the {PAUSER_ROLE} role and implementing
+ *      the external pausing and unpausing functions.
  */
 abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, PausableUpgradeable {
+    // ------------------ Constants ------------------------------- //
+
     /// @dev The role of pauser that is allowed to trigger the paused or unpaused state of the contract.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
@@ -24,6 +24,8 @@ abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, Pausabl
      * @dev Internal initializer of the upgradable contract.
      *
      * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     *
+     * @param pauserRoleAdmin The admin for the {PAUSER_ROLE} role.
      */
     function __PausableExt_init(bytes32 pauserRoleAdmin) internal onlyInitializing {
         __Context_init_unchained();
@@ -39,19 +41,19 @@ abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, Pausabl
      * @dev Unchained internal initializer of the upgradable contract.
      *
      * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     *
+     * @param pauserRoleAdmin The admin for the {PAUSER_ROLE} role.
      */
     function __PausableExt_init_unchained(bytes32 pauserRoleAdmin) internal onlyInitializing {
         _setRoleAdmin(PAUSER_ROLE, pauserRoleAdmin);
     }
 
-    // ------------------ Functions ------------------------------- //
+    // ------------------ Transactional functions ----------------- //
 
     /**
      * @dev Triggers the paused state of the contract.
      *
-     * Requirements:
-     *
-     * - The caller must have the {PAUSER_ROLE} role.
+     * Requirement: the caller must have the {PAUSER_ROLE} role.
      */
     function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
@@ -60,9 +62,7 @@ abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, Pausabl
     /**
      * @dev Triggers the unpaused state of the contract.
      *
-     * Requirements:
-     *
-     * - The caller must have the {PAUSER_ROLE} role.
+     * Requirement: the caller must have the {PAUSER_ROLE} role.
      */
     function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();

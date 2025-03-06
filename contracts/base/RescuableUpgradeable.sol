@@ -11,9 +11,6 @@ import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
  * @title RescuableUpgradeable base contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev Allows to rescue ERC20 tokens locked up in the contract using the {RESCUER_ROLE} role.
- *
- * This contract is used through inheritance. It introduces the {RESCUER_ROLE} role that is allowed to
- * rescue tokens locked up in the contract that is inherited from this one.
  */
 abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
     using SafeERC20 for IERC20;
@@ -26,7 +23,9 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
     /**
      * @dev Internal initializer of the upgradable contract.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     *
+     * @param rescuerRoleAdmin The admin for the {RESCUER_ROLE} role.
      */
     function __Rescuable_init(bytes32 rescuerRoleAdmin) internal onlyInitializing {
         __Context_init_unchained();
@@ -40,30 +39,35 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
     /**
      * @dev Unchained internal initializer of the upgradable contract.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     *
+     * @param rescuerRoleAdmin The admin for the {RESCUER_ROLE} role.
      */
     function __Rescuable_init_unchained(bytes32 rescuerRoleAdmin) internal onlyInitializing {
         _setRoleAdmin(RESCUER_ROLE, rescuerRoleAdmin);
     }
 
-    // ------------------ Functions ------------------------------- //
+    // ------------------ Transactional functions ----------------- //
 
     /**
-     * @dev Withdraws ERC20 tokens locked up in the contract.
+     * @dev Rescues tokens that accidentally were transferred to this contract.
+     *
+     * Does not emit special events except ones related to the token transfer.
      *
      * Requirements:
      *
      * - The caller must have the {RESCUER_ROLE} role.
+     * - The provided account address must not be zero. It is usually checked inside the token smart-contract.
      *
-     * @param token The address of the ERC20 token contract.
-     * @param to The address of the recipient of tokens.
-     * @param amount The amount of tokens to withdraw.
+     * @param token The address of the token smart contract to rescue its coins from this smart contract's account.
+     * @param account The account to transfer the rescued tokens to.
+     * @param amount The amount the tokens to rescue.
      */
     function rescueERC20(
         address token, // Tools: this comment prevents Prettier from formatting into a single line.
-        address to,
+        address account,
         uint256 amount
     ) public onlyRole(RESCUER_ROLE) {
-        IERC20(token).safeTransfer(to, amount);
+        IERC20(token).safeTransfer(account, amount);
     }
 }
