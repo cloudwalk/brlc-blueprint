@@ -18,6 +18,7 @@ import { BalanceFreezerStorage } from "./BalanceFreezerStorage.sol";
  * @title BalanceFreezer contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The contract that responsible for freezing operations on the underlying token contract.
+ * @custom:oz-upgrades-unsafe-allow missing-initializer
  */
 contract BalanceFreezer is
     BalanceFreezerStorage,
@@ -46,41 +47,11 @@ contract BalanceFreezer is
      * @param token_ The address of the token to set as the underlying one.
      */
     function initialize(address token_) external initializer {
-        __BalanceFreezer_init(token_);
-    }
+        __AccessControlExt_init();
+        __PausableExt_init(OWNER_ROLE);
+        __Rescuable_init(OWNER_ROLE);
+        __UUPSExt_init();
 
-    /**
-     * @dev Internal initializer of the upgradable contract.
-     *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
-     *
-     * @param token_ The address of the token to set as the underlying one.
-     */
-    function __BalanceFreezer_init(address token_) internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __AccessControl_init_unchained();
-        __AccessControlExt_init_unchained();
-        __Pausable_init_unchained();
-        __PausableExt_init_unchained(OWNER_ROLE);
-        __Rescuable_init_unchained(OWNER_ROLE);
-        __UUPSUpgradeable_init_unchained();
-
-        __BalanceFreezer_init_unchained(token_);
-    }
-
-    /**
-     * @dev Unchained internal initializer of the upgradable contract.
-     *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
-     *
-     * Requirements:
-     *
-     * - The passed address of the underlying token must not be zero.
-     *
-     * @param token_ The address of the token to set as the underlying one.
-     */
-    function __BalanceFreezer_init_unchained(address token_) internal onlyInitializing {
         if (token_ == address(0)) {
             revert BalanceFreezer_TokenAddressZero();
         }

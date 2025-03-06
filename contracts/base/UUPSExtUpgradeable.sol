@@ -18,6 +18,22 @@ abstract contract UUPSExtUpgradeable is UUPSUpgradeable {
     /// @dev Thrown if the provided new implementation contract address is zero.
     error UUPSExtUpgradeable_ImplementationAddressZero();
 
+    // ------------------ Initializers ---------------------------- //
+
+    /**
+     * @dev Internal initializer of the upgradable contract.
+     *
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     */
+    function __UUPSExt_init() internal onlyInitializing {}
+
+    /**
+     * @dev Unchained internal initializer of the upgradable contract.
+     *
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     */
+    function __UUPSExt_init_unchained() internal onlyInitializing {}
+
     // ------------------ Internal functions ---------------------- //
 
     /**

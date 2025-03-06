@@ -28,11 +28,6 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
      * @param rescuerRoleAdmin The admin for the {RESCUER_ROLE} role.
      */
     function __Rescuable_init(bytes32 rescuerRoleAdmin) internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __AccessControl_init_unchained();
-        __AccessControlExt_init_unchained();
-
         __Rescuable_init_unchained(rescuerRoleAdmin);
     }
 

@@ -18,13 +18,7 @@ abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
-    function __AccessControlExt_init() internal onlyInitializing {
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __AccessControl_init_unchained();
-
-        __AccessControlExt_init_unchained();
-    }
+    function __AccessControlExt_init() internal onlyInitializing {}
 
     /**
      * @dev Unchained internal initializer of the upgradable contract.

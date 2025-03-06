@@ -89,7 +89,6 @@ describe("Contracts 'BalanceFreezer'", async () => {
 
   // Errors of the lib contracts
   const REVERT_ERROR_IF_CONTRACT_INITIALIZATION_IS_INVALID = "InvalidInitialization";
-  const REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING = "NotInitializing";
   const REVERT_ERROR_IF_CONTRACT_IS_PAUSED = "EnforcedPause";
   const REVERT_ERROR_IF_UNAUTHORIZED_ACCOUNT = "AccessControlUnauthorizedAccount";
 
@@ -133,7 +132,7 @@ describe("Contracts 'BalanceFreezer'", async () => {
     users = [user, ...moreUsers];
 
     // Contract factories with the explicitly specified deployer account
-    freezerContractFactory = await ethers.getContractFactory("BalanceFreezerTestable");
+    freezerContractFactory = await ethers.getContractFactory("BalanceFreezer");
     freezerContractFactory = freezerContractFactory.connect(deployer);
     tokenMockFactory = await ethers.getContractFactory("ERC20FreezableTokenMock");
     tokenMockFactory = tokenMockFactory.connect(deployer);
@@ -154,8 +153,7 @@ describe("Contracts 'BalanceFreezer'", async () => {
     const tokenMock = await deployTokenMock();
     let freezerContract: Contract = await upgrades.deployProxy(
       freezerContractFactory,
-      [getAddress(tokenMock)],
-      { unsafeAllow: ["missing-initializer", "missing-initializer-call"] }
+      [getAddress(tokenMock)]
     ) as Contract;
     await freezerContract.waitForDeployment();
     freezerContract = connect(freezerContract, deployer); // Explicitly specifying the initial account
@@ -250,26 +248,12 @@ describe("Contracts 'BalanceFreezer'", async () => {
       const anotherFreezerContract: Contract = await upgrades.deployProxy(
         freezerContractFactory,
         [],
-        { initializer: false, unsafeAllow: ["missing-initializer", "missing-initializer-call"] },
+        { initializer: false }
       ) as Contract;
 
       await expect(
         anotherFreezerContract.initialize(ADDRESS_ZERO)
       ).to.be.revertedWithCustomError(freezerContractFactory, REVERT_ERROR_IF_TOKEN_ADDRESS_IS_ZERO);
-    });
-
-    it("Is reverted if the internal initializer is called outside the init process", async () => {
-      const { freezerContract, tokenMock } = await setUpFixture(deployContracts);
-      await expect(
-        freezerContract.call_parent_initialize(getAddress(tokenMock))
-      ).to.be.revertedWithCustomError(freezerContract, REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING);
-    });
-
-    it("Is reverted if the unchained internal initializer is called outside the init process", async () => {
-      const { freezerContract, tokenMock } = await setUpFixture(deployContracts);
-      await expect(
-        freezerContract.call_parent_initialize_unchained(getAddress(tokenMock))
-      ).to.be.revertedWithCustomError(freezerContract, REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING);
     });
   });
 

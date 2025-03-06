@@ -24,12 +24,13 @@ contract AccessControlExtUpgradeableMock is AccessControlExtUpgradeable, UUPSUpg
      * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
      */
     function initialize() public initializer {
+        __AccessControlExt_init();
         _grantRole(OWNER_ROLE, _msgSender());
         _setRoleAdmin(USER_ROLE, OWNER_ROLE);
-        __AccessControlExt_init();
 
         // Only to provide the 100 % test coverage
         _authorizeUpgrade(address(0));
+        __AccessControlExt_init_unchained();
     }
 
     // ------------------ Functions ------------------------------- //
