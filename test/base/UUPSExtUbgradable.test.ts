@@ -1,19 +1,11 @@
-import { ethers, network, upgrades } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { expect } from "chai";
 import { Contract, ContractFactory } from "ethers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { connect } from "../../test-utils/eth";
+import { setUpFixture } from "../../test-utils/common";
 
 const ADDRESS_ZERO = ethers.ZeroAddress;
-
-async function setUpFixture<T>(func: () => Promise<T>): Promise<T> {
-  if (network.name === "hardhat") {
-    return loadFixture(func);
-  } else {
-    return func();
-  }
-}
 
 describe("Contracts 'UUPSExtUpgradeable'", async () => {
   // Errors of the lib contracts
@@ -39,17 +31,15 @@ describe("Contracts 'UUPSExtUpgradeable'", async () => {
   });
 
   async function deployContract(): Promise<{ uupsExtension: Contract }> {
-    let uupsExtension: Contract = await upgrades.deployProxy(
-      uupsExtensionFactory,
-      []
-    ) as Contract;
+    // The contract under test with the explicitly specified initial account
+    let uupsExtension: Contract = await upgrades.deployProxy(uupsExtensionFactory, []) as Contract;
     await uupsExtension.waitForDeployment();
     uupsExtension = connect(uupsExtension, deployer); // Explicitly specifying the initial account
 
     return { uupsExtension };
   }
 
-  describe("Function 'initialize()'", async () => {
+  describe("Function 'initialize()' and internal initializers", async () => {
     it("The external initializer is reverted if it is called a second time", async () => {
       const { uupsExtension } = await setUpFixture(deployContract);
       await expect(
@@ -60,14 +50,14 @@ describe("Contracts 'UUPSExtUpgradeable'", async () => {
     it("The internal initializer is reverted if it is called outside the init process", async () => {
       const { uupsExtension } = await setUpFixture(deployContract);
       await expect(
-        uupsExtension.call_parent_initialize()
+        uupsExtension.callParentInitializer()
       ).to.be.revertedWithCustomError(uupsExtension, REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING);
     });
 
     it("The internal unchained initializer is reverted if it is called outside the init process", async () => {
       const { uupsExtension } = await setUpFixture(deployContract);
       await expect(
-        uupsExtension.call_parent_initialize_unchained()
+        uupsExtension.callParentInitializerUnchained()
       ).to.be.revertedWithCustomError(uupsExtension, REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING);
     });
   });
@@ -80,21 +70,26 @@ describe("Contracts 'UUPSExtUpgradeable'", async () => {
       await newImplementation.waitForDeployment();
       const newImplementationAddress = await newImplementation.getAddress();
 
-      await expect(uupsExtension.upgradeToAndCall(newImplementationAddress, "0x"))
-        .to.emit(uupsExtension, EVENT_NAME_MOCK_VALIDATE_UPGRADE_CALL)
-        .withArgs(newImplementationAddress);
+      await expect(
+        uupsExtension.upgradeToAndCall(newImplementationAddress, "0x")
+      ).to.emit(
+        uupsExtension,
+        EVENT_NAME_MOCK_VALIDATE_UPGRADE_CALL
+      ).withArgs(newImplementationAddress);
     });
 
     it("Is reverted if the new implementation address is zero", async () => {
       const { uupsExtension } = await setUpFixture(deployContract);
-      await expect(uupsExtension.upgradeToAndCall(ADDRESS_ZERO, "0x"))
-        .to.be.revertedWithCustomError(uupsExtension, REVERT_ERROR_IMPLEMENTATION_ADDRESS_ZERO);
+      await expect(
+        uupsExtension.upgradeToAndCall(ADDRESS_ZERO, "0x")
+      ).to.be.revertedWithCustomError(uupsExtension, REVERT_ERROR_IMPLEMENTATION_ADDRESS_ZERO);
     });
 
     it("Is reverted if the new implementation address is not a contract", async () => {
       const { uupsExtension } = await setUpFixture(deployContract);
-      await expect(uupsExtension.upgradeToAndCall(deployer.address, "0x"))
-        .to.be.revertedWithCustomError(uupsExtension, REVERT_ERROR_IMPLEMENTATION_ADDRESS_NOT_CONTRACT);
+      await expect(
+        uupsExtension.upgradeToAndCall(deployer.address, "0x")
+      ).to.be.revertedWithCustomError(uupsExtension, REVERT_ERROR_IMPLEMENTATION_ADDRESS_NOT_CONTRACT);
     });
   });
 });

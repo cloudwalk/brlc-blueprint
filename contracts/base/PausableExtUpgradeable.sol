@@ -13,8 +13,6 @@ import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
  *      the external pausing and unpausing functions.
  */
 abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, PausableUpgradeable {
-    // ------------------ Constants ------------------------------- //
-
     /// @dev The role of pauser that is allowed to trigger the paused or unpaused state of the contract.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 

@@ -20,39 +20,34 @@ contract RescuableUpgradeableMock is RescuableUpgradeable, UUPSUpgradeable {
     /**
      * @dev The initialize function of the upgradable contract.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
     function initialize() public initializer {
         __AccessControlExt_init();
         __Rescuable_init(OWNER_ROLE);
+
         _grantRole(OWNER_ROLE, _msgSender());
 
         // Only to provide the 100 % test coverage
         _authorizeUpgrade(address(0));
     }
 
-    // ------------------ Functions ------------------------------- //
+    // ------------------ Transactional functions ----------------- //
 
-    /**
-     * @dev Needed to check that the initialize function of the ancestor contract
-     * has the 'onlyInitializing' modifier.
-     */
-    function call_parent_initialize() public {
+    /// @dev Calls the parent internal initializing function to verify the 'onlyInitializing' modifier.
+    function callParentInitializer() external {
         __Rescuable_init(OWNER_ROLE);
     }
 
-    /**
-     * @dev Needed to check that the unchained initialize function of the ancestor contract
-     * has the 'onlyInitializing' modifier.
-     */
-    function call_parent_initialize_unchained() public {
+    /// @dev Calls the parent internal unchained initializing function to verify the 'onlyInitializing' modifier.
+    function callParentInitializerUnchained() external {
         __Rescuable_init_unchained(OWNER_ROLE);
     }
 
     // ------------------ Internal functions ---------------------- //
 
     /**
-     * @dev The upgrade authorization function for UUPSProxy.
+     * @dev The implementation of the upgrade authorization function of the parent UUPSProxy contract.
      * @param newImplementation The address of the new implementation.
      */
     function _authorizeUpgrade(address newImplementation) internal pure override {
