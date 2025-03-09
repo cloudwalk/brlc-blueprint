@@ -25,7 +25,7 @@ describe("Contract 'RescuableUpgradeable'", async () => {
   });
 
   async function deployRescuableMock(): Promise<{ rescuableMock: Contract }> {
-    // The contract factories with the explicitly specified deployer account
+    // The contract factory with the explicitly specified deployer account
     let rescuableMockFactory = await ethers.getContractFactory("RescuableUpgradeableMock");
     rescuableMockFactory = rescuableMockFactory.connect(deployer);
 
@@ -39,7 +39,7 @@ describe("Contract 'RescuableUpgradeable'", async () => {
 
   async function deployTokenMock(): Promise<{ tokenMock: Contract }> {
     // The token contract factory with the explicitly specified deployer account
-    let tokenMockFactory = await ethers.getContractFactory("ERC20FreezableTokenMock");
+    let tokenMockFactory = await ethers.getContractFactory("ERC20TokenMock");
     tokenMockFactory = tokenMockFactory.connect(deployer);
 
     // The token contract with the explicitly specified initial account
