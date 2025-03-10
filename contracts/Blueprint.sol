@@ -64,10 +64,10 @@ contract Blueprint is
      * @param token_ The address of the token to set as the underlying one.
      */
     function initialize(address token_) external initializer {
-        __AccessControlExt_init();
+        __AccessControlExt_init(); // This is needed to avoid errors during coverage assessment only.
         __PausableExt_init(OWNER_ROLE);
         __Rescuable_init(OWNER_ROLE);
-        __UUPSUpgradeable_init();
+        __UUPSExt_init(); // This is needed to avoid errors during coverage assessment only.
 
         if (token_ == address(0)) {
             revert Blueprint_TokenAddressZero();
@@ -91,13 +91,15 @@ contract Blueprint is
      * - The new operational treasury address must not be zero.
      * - The new operational treasury address must not be the same as already configured.
      */
-    function setOperationalTreasury(address newTreasury) external onlyRole(MANAGER_ROLE) {
-        if (newTreasury == address(0)) {
-            revert Blueprint_TreasuryAddressZero();
-        }
+    function setOperationalTreasury(address newTreasury) external onlyRole(OWNER_ROLE) {
         address oldTreasury = _operationalTreasury;
         if (newTreasury == oldTreasury) {
             revert Blueprint_TreasuryAddressAlreadyConfigured();
+        }
+        if (newTreasury != address(0)) {
+            if (IERC20(_token).allowance(newTreasury, address(this)) == 0) {
+                revert Blueprint_TreasuryAllowanceZero();
+            }
         }
 
         emit OperationalTreasuryChanged(newTreasury, oldTreasury);
@@ -148,8 +150,13 @@ contract Blueprint is
     }
 
     /// @inheritdoc IBlueprintPrimary
+    function getAccountState(address account) external view returns (AccountState memory) {
+        return _accountStates[account];
+    }
+
+    /// @inheritdoc IBlueprintPrimary
     function balanceOf(address account) public view returns (uint256) {
-        return _balances[account];
+        return _accountStates[account].balance;
     }
 
     /// @inheritdoc IBlueprintPrimary
@@ -184,18 +191,25 @@ contract Blueprint is
         operation.account = account;
         operation.amount = uint64(amount);
 
-        uint256 oldBalance = _balances[account];
+        AccountState storage state = _accountStates[account];
+
+        uint256 oldBalance = state.balance;
         uint256 newBalance = oldBalance;
 
         if (operationKind == OPERATION_KIND_DEPOSIT) {
             operation.status = OperationStatus.Deposit;
             newBalance += amount;
+            if (newBalance > type(uint64).max) {
+                revert Blueprint_BalanceExcess();
+            }
         } else {
             newBalance -= amount;
             operation.status = OperationStatus.Withdrawal;
         }
 
-        _balances[account] = newBalance;
+        state.balance = uint64(newBalance);
+        state.operationCount += 1;
+        state.lastOpId = opId;
 
         emit BalanceUpdated(
             opId, // Tools: this comment prevents Prettier from formatting into a single line.
@@ -205,9 +219,9 @@ contract Blueprint is
         );
 
         if (operationKind == OPERATION_KIND_DEPOSIT) {
-            IERC20(_token).transferFrom(treasury, account, amount);
-        } else {
             IERC20(_token).transferFrom(account, treasury, amount);
+        } else {
+            IERC20(_token).transferFrom(treasury, account, amount);
         }
     }
 
@@ -224,7 +238,7 @@ contract Blueprint is
         if (opId == bytes32(0)) {
             revert Blueprint_OperationIdZero();
         }
-        if (amount >= type(uint256).max) {
+        if (amount > type(uint64).max) {
             revert Blueprint_AmountExcess();
         }
     }
@@ -233,7 +247,7 @@ contract Blueprint is
     function _getAndCheckOperationalTreasury() internal view returns (address) {
         address operationalTreasury_ = _operationalTreasury;
         if (operationalTreasury_ == address(0)) {
-            revert Blueprint_TreasuryAddressZero();
+            revert Blueprint_OperationalTreasuryAddressZero();
         }
         return operationalTreasury_;
     }
@@ -245,7 +259,7 @@ contract Blueprint is
      */
     function _getAndCheckOperation(bytes32 opId) internal view returns (Operation storage) {
         Operation storage operation = _operations[opId];
-        if (operation.status == OperationStatus.Nonexistent) {
+        if (operation.status != OperationStatus.Nonexistent) {
             revert Blueprint_OperationAlreadyExecuted(opId);
         }
         return operation;

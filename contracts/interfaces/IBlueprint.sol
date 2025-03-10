@@ -7,7 +7,7 @@ import { IBlueprintTypes } from "./IBlueprintTypes.sol";
 /**
  * @title IBlueprintPrimary interface
  * @author CloudWalk Inc. (See https://cloudwalk.io)
- * @dev The primary part of the reference smart contract interface.
+ * @dev The primary part of the blueprint smart contract interface.
  *
  * See details about the contract in the comments of the {IBlueprint} interface.
  */
@@ -84,7 +84,16 @@ interface IBlueprintPrimary is IBlueprintTypes {
     function getOperation(bytes32 opId) external view returns (Operation memory operation);
 
     /**
+     * @dev Returns the state of an account.
+     * @param account The account to get the state of.
+     * @return state The state of the account.
+     */
+    function getAccountState(address account) external view returns (AccountState memory state);
+
+    /**
      * @dev Retrieves the balance of an account.
+     *
+     * This function is a shortcut for `getAccountState().balance`.
      *
      * @param account The account to check the balance of.
      * @return The resulting amount of tokens that were transferred to the contract after all operations.
@@ -95,7 +104,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
     function underlyingToken() external view returns (address);
 
     /**
-     * @dev Proves the contract is the reference one. A marker function.
+     * @dev Proves the contract is the blueprint one. A marker function.
      *
      * It is used for simple contract compliance checks, e.g. during an upgrade.
      * This avoids situations where a wrong contract address is specified by mistake.
@@ -106,7 +115,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
 /**
  * @title IBlueprintConfiguration interface
  * @author CloudWalk Inc. (See https://cloudwalk.io)
- * @dev The configuration part of the reference smart contract interface.
+ * @dev The configuration part of the blueprint smart contract interface.
  */
 interface IBlueprintConfiguration {
     // ------------------ Events ---------------------------------- //
@@ -143,7 +152,7 @@ interface IBlueprintConfiguration {
 /**
  * @title IBlueprintErrors interface
  * @author CloudWalk Inc. (See https://cloudwalk.io)
- * @dev Defines the custom errors used in the reference contract.
+ * @dev Defines the custom errors used in the blueprint contract.
  *
  * The errors are ordered alphabetically.
  */
@@ -154,7 +163,10 @@ interface IBlueprintErrors {
     /// @dev Thrown if the provided amount is greater than the allowed maximum.
     error Blueprint_AmountExcess();
 
-    /// @dev Thrown if the provided new implementation address is not of a reference contract.
+    /// @dev Thrown if the result account balance is greater than the allowed maximum.
+    error Blueprint_BalanceExcess();
+
+    /// @dev Thrown if the provided new implementation address is not of a blueprint contract.
     error Blueprint_ImplementationAddressInvalid();
 
     /**
@@ -176,21 +188,25 @@ interface IBlueprintErrors {
     /// @dev Thrown if the provided treasury address is already configured.
     error Blueprint_TreasuryAddressAlreadyConfigured();
 
-    /// @dev Thrown if the provided treasury address is zero.
-    error Blueprint_TreasuryAddressZero();
+    /// @dev Thrown if the configured operational treasury address is zero, so token transfer operations are disabled.
+    error Blueprint_OperationalTreasuryAddressZero();
+
+    /// @dev Thrown if the provided treasury has not granted the contract allowance to spend tokens.
+    error Blueprint_TreasuryAllowanceZero();
 }
 
 /**
  * @title IBlueprint interface
  * @author CloudWalk Inc. (See https://cloudwalk.io)
- * @dev The full interface of the reference smart contract.
+ * @dev The full interface of the blueprint smart contract.
  *
- * The smart contract is designed to deposit or withdraw tokens with specifying an external (off-chain) identifier.
+ * The smart contract is designed as a reference and template one.
+ * It allows to deposit or withdraw tokens with specifying an external (off-chain) identifier.
  * The contract itself does not store tokens on its account.
  * It uses an external storage called the operational treasury that can be configured by the owner of the contract.
  * The contract can be paused, in that case only configuration and non-transactional functions can be called.
  * Depositing, withdrawal, and similar functions are reverted if the contract is paused.
  *
- * The place in the project file structure: file `<main_smart_contracts_folder>/interfaces/IBlueprint.sol`.
+ * Some logic and entities of this contract are just for demonstration purposes and do not have any real use.
  */
 interface IBlueprint is IBlueprintPrimary, IBlueprintConfiguration, IBlueprintErrors {}

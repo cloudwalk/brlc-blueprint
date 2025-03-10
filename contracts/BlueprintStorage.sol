@@ -25,8 +25,8 @@ abstract contract BlueprintStorage is IBlueprintTypes {
     /// @dev The mapping of an operation structure for a given off-chain operation identifier.
     mapping(bytes32 opId => Operation operation) internal _operations;
 
-    /// @dev The mapping of a balance for a given account.
-    mapping(address account => uint256 balance) internal _balances;
+    /// @dev The mapping of a state for a given account.
+    mapping(address account => AccountState state) internal _accountStates;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions

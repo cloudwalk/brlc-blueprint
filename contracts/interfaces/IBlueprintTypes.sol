@@ -5,13 +5,13 @@ pragma solidity ^0.8.0;
 /**
  * @title IBlueprintTypes interface
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Defines the types used in the reference smart contract.
+ * @dev Defines the types used in the blueprint smart contract.
  *
  * See details about the contract in the comments of the {IBlueprint} interface.
  */
 interface IBlueprintTypes {
     /**
-     * @dev Possible statuses of a an operation used in the reference smart contract.
+     * @dev Possible statuses of a an operation used in the blueprint smart contract.
      *
      * The values:
      *
@@ -26,7 +26,7 @@ interface IBlueprintTypes {
     }
 
     /**
-     * @dev The structure with data of a single operation of the reference smart-contract.
+     * @dev The data of a single operation of the blueprint smart-contract.
      *
      * The fields:
      *
@@ -39,5 +39,23 @@ interface IBlueprintTypes {
         address account;
         uint64 amount;
         // uint24 __reserved; // Reserved for future use until the end of the storage slot.
+    }
+
+    /**
+     * @dev The state of a single account within the blueprint smart-contract.
+     *
+     * The fields:
+     *
+     * - lastOpId -------- The identifier of the last operation related to the account.
+     * - balance --------- The balance of the account.
+     * - operationCount -- The number of operations related to the account.
+     */
+    struct AccountState {
+        // Slot 1
+        bytes32 lastOpId;
+        // Slot 2
+        uint64 balance;
+        uint32 operationCount;
+        // uint160 __reserved; // Reserved for future use until the end of the storage slot.
     }
 }
