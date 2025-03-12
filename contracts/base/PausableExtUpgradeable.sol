@@ -21,7 +21,7 @@ abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, Pausabl
     /**
      * @dev Internal initializer of the upgradable contract.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      *
      * @param pauserRoleAdmin The admin for the {PAUSER_ROLE} role.
      */
@@ -33,7 +33,7 @@ abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, Pausabl
     /**
      * @dev Unchained internal initializer of the upgradable contract.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      *
      * @param pauserRoleAdmin The admin for the {PAUSER_ROLE} role.
      */

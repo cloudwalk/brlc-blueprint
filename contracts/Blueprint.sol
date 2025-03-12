@@ -59,7 +59,7 @@ contract Blueprint is
     /**
      * @dev Initializer of the upgradable contract.
      *
-     * See details https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable.
+     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      *
      * @param token_ The address of the token to set as the underlying one.
      */
