@@ -53,6 +53,8 @@ interface IBlueprintTypes {
     struct AccountState {
         // Slot 1
         bytes32 lastOpId;
+        // No reserve until the end of the storage slot
+
         // Slot 2
         uint64 balance;
         uint32 operationCount;
