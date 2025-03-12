@@ -59,7 +59,7 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
      * @param amount The amount the tokens to rescue.
      */
     function rescueERC20(
-        address token, // Tools: this comment prevents Prettier from formatting into a single line.
+        address token, // Tools: this comment prevents Prettier from formatting into a single line
         address account,
         uint256 amount
     ) public onlyRole(RESCUER_ROLE) {

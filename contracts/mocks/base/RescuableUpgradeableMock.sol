@@ -23,7 +23,7 @@ contract RescuableUpgradeableMock is RescuableUpgradeable, UUPSUpgradeable {
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
     function initialize() public initializer {
-        __AccessControlExt_init(); // This is needed to avoid errors during coverage assessment only.
+        __AccessControlExt_init(); // This is needed to avoid errors during coverage assessment only
         __Rescuable_init(OWNER_ROLE);
 
         _grantRole(OWNER_ROLE, _msgSender());
@@ -51,6 +51,6 @@ contract RescuableUpgradeableMock is RescuableUpgradeable, UUPSUpgradeable {
      * @param newImplementation The address of the new implementation.
      */
     function _authorizeUpgrade(address newImplementation) internal pure override {
-        newImplementation; // Suppresses a compiler warning about the unused variable.
+        newImplementation; // Suppresses a compiler warning about the unused variable
     }
 }

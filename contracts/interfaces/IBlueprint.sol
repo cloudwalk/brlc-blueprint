@@ -25,7 +25,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
      * @param oldBalance The previous balance of the account.
      */
     event BalanceUpdated(
-        bytes32 indexed opId, // Tools: this comment prevents Prettier from formatting into a single line.
+        bytes32 indexed opId, // Tools: this comment prevents Prettier from formatting into a single line
         address indexed account,
         uint256 newBalance,
         uint256 oldBalance
@@ -48,7 +48,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
      * @param opId The off-chain identifier of the operation.
      */
     function deposit(
-        address account, // Tools: this comment prevents Prettier from formatting into a single line.
+        address account, // Tools: this comment prevents Prettier from formatting into a single line
         uint256 amount,
         bytes32 opId
     ) external;
@@ -69,7 +69,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
      * @param opId The off-chain identifier of the operation.
      */
     function withdraw(
-        address account, // Tools: this comment prevents Prettier from formatting into a single line.
+        address account, // Tools: this comment prevents Prettier from formatting into a single line
         uint256 amount,
         bytes32 opId
     ) external;

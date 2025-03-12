@@ -64,10 +64,10 @@ contract Blueprint is
      * @param token_ The address of the token to set as the underlying one.
      */
     function initialize(address token_) external initializer {
-        __AccessControlExt_init(); // This is needed to avoid errors during coverage assessment only.
+        __AccessControlExt_init(); // This is needed to avoid errors during coverage assessment only
         __PausableExt_init(OWNER_ROLE);
         __Rescuable_init(OWNER_ROLE);
-        __UUPSExt_init(); // This is needed to avoid errors during coverage assessment only.
+        __UUPSExt_init(); // This is needed to avoid errors during coverage assessment only
 
         if (token_ == address(0)) {
             revert Blueprint_TokenAddressZero();
@@ -117,7 +117,7 @@ contract Blueprint is
      * - The provided operation identifier must not be zero.
      */
     function deposit(
-        address account, // Tools: this comment prevents Prettier from formatting into a single line.
+        address account, // Tools: this comment prevents Prettier from formatting into a single line
         uint256 amount,
         bytes32 opId
     ) external whenNotPaused onlyRole(MANAGER_ROLE) {
@@ -135,7 +135,7 @@ contract Blueprint is
      * - The provided operation identifier must not be zero.
      */
     function withdraw(
-        address account, // Tools: this comment prevents Prettier from formatting into a single line.
+        address account, // Tools: this comment prevents Prettier from formatting into a single line
         uint256 amount,
         bytes32 opId
     ) external whenNotPaused onlyRole(MANAGER_ROLE) {
@@ -212,7 +212,7 @@ contract Blueprint is
         state.lastOpId = opId;
 
         emit BalanceUpdated(
-            opId, // Tools: this comment prevents Prettier from formatting into a single line.
+            opId, // Tools: this comment prevents Prettier from formatting into a single line
             account,
             newBalance,
             oldBalance

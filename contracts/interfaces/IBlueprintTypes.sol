@@ -38,7 +38,7 @@ interface IBlueprintTypes {
         OperationStatus status;
         address account;
         uint64 amount;
-        // uint24 __reserved; // Reserved for future use until the end of the storage slot.
+        // uint24 __reserved; // Reserved for future use until the end of the storage slot
     }
 
     /**
@@ -56,6 +56,6 @@ interface IBlueprintTypes {
         // Slot 2
         uint64 balance;
         uint32 operationCount;
-        // uint160 __reserved; // Reserved for future use until the end of the storage slot.
+        // uint160 __reserved; // Reserved for future use until the end of the storage slot
     }
 }
