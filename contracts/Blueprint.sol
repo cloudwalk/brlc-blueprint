@@ -64,10 +64,10 @@ contract Blueprint is
      * @param token_ The address of the token to set as the underlying one.
      */
     function initialize(address token_) external initializer {
-        __AccessControlExt_init(); // This is needed to avoid errors during coverage assessment only
+        __AccessControlExt_init(); // This is needed only to avoid errors during coverage assessment
         __PausableExt_init(OWNER_ROLE);
         __Rescuable_init(OWNER_ROLE);
-        __UUPSExt_init(); // This is needed to avoid errors during coverage assessment only
+        __UUPSExt_init(); // This is needed only to avoid errors during coverage assessment
 
         if (token_ == address(0)) {
             revert Blueprint_TokenAddressZero();

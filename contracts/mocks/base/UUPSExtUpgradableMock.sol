@@ -21,7 +21,7 @@ contract UUPSExtUpgradeableMock is UUPSExtUpgradeable {
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
     function initialize() public initializer {
-        __UUPSExt_init(); // This is needed to avoid errors during coverage assessment only
+        __UUPSExt_init(); // This is needed only to avoid errors during coverage assessment
 
         // Only to provide the 100 % test coverage
         __UUPSExt_init_unchained();
