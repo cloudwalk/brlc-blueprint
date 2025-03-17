@@ -1,14 +1,16 @@
-# Balance Freezer
+# Blueprint
 
 <p align="center">
   <img src="./docs/media/brlc-cover.png">
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![example branch parameter](https://github.com/cloudwalk/brlc-balance-freezer/actions/workflows/build.yml/badge.svg?branch=main)
-![example branch parameter](https://github.com/cloudwalk/brlc-balance-freezer/actions/workflows/test.yml/badge.svg?branch=main)
+![example branch parameter](https://github.com/cloudwalk/brlc-blueprint/actions/workflows/build.yml/badge.svg?branch=main)
+![example branch parameter](https://github.com/cloudwalk/brlc-blueprint/actions/workflows/test.yml/badge.svg?branch=main)
 
-This repository contains BalanceFreezer smart contracts.
+This repository contains Blueprint smart contracts.
+
+The Blueprint smart contract is designed as a reference and template one.
 
 ## Project Setup
 1. Clone the repo.
