@@ -305,14 +305,14 @@ describe("Contracts 'Blueprint'", async () => {
     });
 
     it("Is reverted if the passed token address is zero", async () => {
-      const anotherFreezerContract: Contract = await upgrades.deployProxy(
+      const anotherBlueprintContract: Contract = await upgrades.deployProxy(
         blueprintFactory,
         [],
         { initializer: false }
       ) as Contract;
 
       await expect(
-        anotherFreezerContract.initialize(ADDRESS_ZERO)
+        anotherBlueprintContract.initialize(ADDRESS_ZERO)
       ).to.be.revertedWithCustomError(blueprintFactory, ERROR_NAME_TOKEN_ADDRESS_IS_ZERO);
     });
   });
