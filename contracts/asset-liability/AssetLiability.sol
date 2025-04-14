@@ -281,26 +281,17 @@ contract AssetLiability is
      * Emits a {LiabilityUpdated} event.
      */
     function _increaseLiability(address account, uint256 amount) internal {
-        if (account == address(0)) {
-            revert AssetLiability_AccountAddressZero();
-        }
-
-        if (amount == 0) {
-            revert AssetLiability_AmountZero();
-        }
-
-        if (amount > type(uint64).max) {
-            revert AssetLiability_AmountOverflow();
-        }
+        _checkLiabilityOperationParameters(account, amount);
 
         AssetLiabilityData storage data = _getAssetLiabilityStorage();
         Liability storage liability = data.liabilities[account];
         uint256 oldLiability = liability.amount;
 
-        liability.amount += uint64(amount);
         data.totalLiability += amount;
+        uint256 newLiability = uint64(oldLiability) + uint64(amount); // Panic if result is larger than 64 bits
+        liability.amount = uint64(newLiability);
 
-        emit LiabilityUpdated(account, liability.amount, oldLiability);
+        emit LiabilityUpdated(account, newLiability, oldLiability);
     }
 
     /**
@@ -319,17 +310,7 @@ contract AssetLiability is
      * Emits a {LiabilityUpdated} event.
      */
     function _decreaseLiability(address account, uint256 amount) internal {
-        if (account == address(0)) {
-            revert AssetLiability_AccountAddressZero();
-        }
-
-        if (amount == 0) {
-            revert AssetLiability_AmountZero();
-        }
-
-        if (amount > type(uint64).max) {
-            revert AssetLiability_AmountOverflow();
-        }
+        _checkLiabilityOperationParameters(account, amount);
 
         AssetLiabilityData storage data = _getAssetLiabilityStorage();
         Liability storage liability = data.liabilities[account];
@@ -342,12 +323,33 @@ contract AssetLiability is
         // Safe to use unchecked here because:
         // 1. We've verified that amount <= oldLiability above
         // 2. data.totalLiability >= liability.amount by definition
+        uint256 newLiability;
         unchecked {
-            liability.amount -= uint64(amount);
             data.totalLiability -= amount;
+            newLiability = oldLiability - amount;
+            liability.amount = uint64(newLiability);
         }
 
-        emit LiabilityUpdated(account, liability.amount, oldLiability);
+        emit LiabilityUpdated(account, newLiability, oldLiability);
+    }
+
+    /**
+     * @dev Checks the parameters of the liability operation.
+     * @param account The account to decrease the liability for.
+     * @param amount The amount to decrease the liability by.
+     */
+    function _checkLiabilityOperationParameters(address account, uint256 amount) internal pure {
+        if (account == address(0)) {
+            revert AssetLiability_AccountAddressZero();
+        }
+
+        if (amount == 0) {
+            revert AssetLiability_AmountZero();
+        }
+
+        if (amount > type(uint64).max) {
+            revert AssetLiability_AmountOverflow();
+        }
     }
 
     /**
