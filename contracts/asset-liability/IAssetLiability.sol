@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 /**
  * @title IAssetLiabilityPrimary interface
@@ -21,7 +21,8 @@ interface IAssetLiabilityPrimary {
     // ------------------ Transactional functions ----------------- //
 
     /**
-     * @dev Transfers a specified amount of tokens to an account and increases the liability of the account.
+     * @dev Transfers a specified amount of tokens from the operational treasury to an account and
+     * increases the liability of the account.
      *
      * This function can be called only by an account with a special role.
      *
@@ -45,16 +46,16 @@ interface IAssetLiabilityPrimary {
     function increaseLiability(address[] calldata accounts, uint256[] calldata amounts) external;
 
     /**
-     * @dev Reduces the liability of an account by a specified amount.
+     * @dev Decreases the liability of an account by a specified amount.
      *
      * This function can be called only by an account with a special role.
      *
      * Emits multiple {LiabilityUpdated} events.
      *
-     * @param accounts The accounts to reduce the liability for.
-     * @param amounts The amounts to reduce the liability by.
+     * @param accounts The accounts to decrease the liability for.
+     * @param amounts The amounts to decrease the liability by.
      */
-    function reduceLiability(address[] calldata accounts, uint256[] calldata amounts) external;
+    function decreaseLiability(address[] calldata accounts, uint256[] calldata amounts) external;
 
     // ------------------ View functions -------------------------- //
 
@@ -99,9 +100,9 @@ interface IAssetLiabilityConfiguration {
      *
      * Emits a {TreasuryUpdated} event.
      *
-     * @param treasury_ The address of the operational treasury.
+     * @param operationalTreasury_ The address of the operational treasury.
      */
-    function setOperationalTreasury(address treasury_) external;
+    function setOperationalTreasury(address operationalTreasury_) external;
 
     // ------------------ View functions -------------------------- //
 
@@ -144,8 +145,11 @@ interface IAssetLiabilityErrors {
     /// @dev Thrown if the amount is zero when its not allowed.
     error AssetLiability_AmountZero();
 
-    /// @dev Thrown if the reduction amount exceeds the current liability of an account.
-    error AssetLiability_ReductionAmountExcess();
+    /// @dev Thrown if the decrease amount exceeds the current liability of an account.
+    error AssetLiability_DecreaseAmountExcess();
+
+    /// @dev Thrown if the amount is too large to be stored in a uint64.
+    error AssetLiability_AmountOverflow();
 }
 
 /**

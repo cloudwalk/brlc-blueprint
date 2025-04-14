@@ -17,6 +17,7 @@ interface IAssetLiabilityTypes {
      */
     struct Liability {
         // Slot 1
+
         uint64 amount;
         // uint192 __reserved; // Reserved for future use until the end of the storage slot
     }
