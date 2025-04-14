@@ -65,10 +65,10 @@ contract AssetLiability is
      * Cannot be zero address.
      */
     function initialize(address underlyingToken_) external initializer {
-        __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
-        __PausableExt_init_unchained(OWNER_ROLE);
-        __Rescuable_init_unchained(OWNER_ROLE);
-        __UUPSExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
+        __AccessControlExt_init(); // This is needed only to avoid errors during coverage assessment
+        __PausableExt_init(OWNER_ROLE);
+        __Rescuable_init(OWNER_ROLE);
+        __UUPSExt_init(); // This is needed only to avoid errors during coverage assessment
         __AssetLiability_init_unchained(underlyingToken_);
     }
 
