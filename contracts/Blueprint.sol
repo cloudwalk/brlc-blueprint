@@ -166,7 +166,7 @@ contract Blueprint is
 
     // ------------------ Pure functions -------------------------- //
 
-    /// @inheritdoc IBlueprintPrimary
+    /// @inheritdoc IBlueprint
     function proveBlueprint() external pure {}
 
     // ------------------ Internal functions ---------------------- //

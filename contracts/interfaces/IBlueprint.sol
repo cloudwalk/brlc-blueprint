@@ -102,14 +102,6 @@ interface IBlueprintPrimary is IBlueprintTypes {
 
     /// @dev Returns the address of the underlying token contract.
     function underlyingToken() external view returns (address);
-
-    /**
-     * @dev Proves the contract is the blueprint one. A marker function.
-     *
-     * It is used for simple contract compliance checks, e.g. during an upgrade.
-     * This avoids situations where a wrong contract address is specified by mistake.
-     */
-    function proveBlueprint() external pure;
 }
 
 /**
@@ -209,4 +201,12 @@ interface IBlueprintErrors {
  *
  * Some logic and entities of this contract are just for demonstration purposes and do not have any real use.
  */
-interface IBlueprint is IBlueprintPrimary, IBlueprintConfiguration, IBlueprintErrors {}
+interface IBlueprint is IBlueprintPrimary, IBlueprintConfiguration, IBlueprintErrors {
+    /**
+     * @dev Proves the contract is the blueprint one. A marker function.
+     *
+     * It is used for simple contract compliance checks, e.g. during an upgrade.
+     * This avoids situations where a wrong contract address is specified by mistake.
+     */
+    function proveBlueprint() external pure;
+}
