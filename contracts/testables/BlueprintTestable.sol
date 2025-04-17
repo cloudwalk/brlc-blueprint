@@ -17,6 +17,6 @@ contract BlueprintTestable is Blueprint {
      * @param newState The new state of the account.
      */
     function setAccountState(address account, AccountState calldata newState) public {
-        _accountStates[account] = newState;
+        _getBlueprintStorage().accountStates[account] = newState;
     }
 }

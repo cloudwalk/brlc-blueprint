@@ -14,7 +14,7 @@ import { IBlueprint } from "./interfaces/IBlueprint.sol";
 import { IBlueprintPrimary } from "./interfaces/IBlueprint.sol";
 import { IBlueprintConfiguration } from "./interfaces/IBlueprint.sol";
 
-import { BlueprintStorage } from "./BlueprintStorage.sol";
+import {BlueprintStorageLayout} from "./BlueprintStorageLayout.sol";
 
 /**
  * @title Blueprint contract
@@ -24,7 +24,7 @@ import { BlueprintStorage } from "./BlueprintStorage.sol";
  * See details about the contract in the comments of the {IBlueprint} interface.
  */
 contract Blueprint is
-    BlueprintStorage,
+    BlueprintStorageLayout,
     AccessControlExtUpgradeable,
     PausableExtUpgradeable,
     RescuableUpgradeable,
@@ -33,12 +33,6 @@ contract Blueprint is
     IBlueprint
 {
     // ------------------ Constants ------------------------------- //
-
-    /// @dev The role of this contract owner.
-    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-
-    /// @dev The role of manager that is allowed to deposit and withdraw tokens to the contract.
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     /// @dev The kind of operation that is deposit.
     uint256 internal constant OPERATION_KIND_DEPOSIT = 0;
@@ -73,7 +67,7 @@ contract Blueprint is
             revert Blueprint_TokenAddressZero();
         }
 
-        _token = token_;
+        _getBlueprintStorage().token = token_;
 
         _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
         _setRoleAdmin(MANAGER_ROLE, OWNER_ROLE);
@@ -92,18 +86,19 @@ contract Blueprint is
      * - The new operational treasury address must not be the same as already configured.
      */
     function setOperationalTreasury(address newTreasury) external onlyRole(OWNER_ROLE) {
-        address oldTreasury = _operationalTreasury;
+        BlueprintStorage storage $ = _getBlueprintStorage();
+        address oldTreasury = $.operationalTreasury;
         if (newTreasury == oldTreasury) {
             revert Blueprint_TreasuryAddressAlreadyConfigured();
         }
         if (newTreasury != address(0)) {
-            if (IERC20(_token).allowance(newTreasury, address(this)) == 0) {
+            if (IERC20($.token).allowance(newTreasury, address(this)) == 0) {
                 revert Blueprint_TreasuryAllowanceZero();
             }
         }
 
         emit OperationalTreasuryChanged(newTreasury, oldTreasury);
-        _operationalTreasury = newTreasury;
+        $.operationalTreasury = newTreasury;
     }
 
     /**
@@ -146,27 +141,27 @@ contract Blueprint is
 
     /// @inheritdoc IBlueprintPrimary
     function getOperation(bytes32 opId) external view returns (Operation memory) {
-        return _operations[opId];
+        return _getBlueprintStorage().operations[opId];
     }
 
     /// @inheritdoc IBlueprintPrimary
     function getAccountState(address account) external view returns (AccountState memory) {
-        return _accountStates[account];
+        return _getBlueprintStorage().accountStates[account];
     }
 
     /// @inheritdoc IBlueprintPrimary
     function balanceOf(address account) public view returns (uint256) {
-        return _accountStates[account].balance;
+        return _getBlueprintStorage().accountStates[account].balance;
     }
 
     /// @inheritdoc IBlueprintPrimary
     function underlyingToken() external view returns (address) {
-        return _token;
+        return _getBlueprintStorage().token;
     }
 
     /// @inheritdoc IBlueprintConfiguration
     function operationalTreasury() external view returns (address) {
-        return _operationalTreasury;
+        return _getBlueprintStorage().operationalTreasury;
     }
 
     // ------------------ Pure functions -------------------------- //
@@ -185,13 +180,14 @@ contract Blueprint is
      */
     function _executeOperation(address account, uint256 amount, bytes32 opId, uint256 operationKind) internal {
         _checkOperationParameters(account, amount, opId);
-        address treasury = _getAndCheckOperationalTreasury();
+        BlueprintStorage storage $ = _getBlueprintStorage();
+        address treasury = _getAndCheckOperationalTreasury($);
 
-        Operation storage operation = _getAndCheckOperation(opId);
+        Operation storage operation = _getAndCheckOperation(opId, $);
         operation.account = account;
         operation.amount = uint64(amount);
 
-        AccountState storage state = _accountStates[account];
+        AccountState storage state = $.accountStates[account];
 
         uint256 oldBalance = state.balance;
         uint256 newBalance = oldBalance;
@@ -219,9 +215,9 @@ contract Blueprint is
         );
 
         if (operationKind == OPERATION_KIND_DEPOSIT) {
-            IERC20(_token).transferFrom(account, treasury, amount);
+            IERC20($.token).transferFrom(account, treasury, amount);
         } else {
-            IERC20(_token).transferFrom(treasury, account, amount);
+            IERC20($.token).transferFrom(treasury, account, amount);
         }
     }
 
@@ -244,8 +240,8 @@ contract Blueprint is
     }
 
     /// @dev Returns the operational treasury address after checking it.
-    function _getAndCheckOperationalTreasury() internal view returns (address) {
-        address operationalTreasury_ = _operationalTreasury;
+    function _getAndCheckOperationalTreasury(BlueprintStorage storage $) internal view returns (address) {
+        address operationalTreasury_ = $.operationalTreasury;
         if (operationalTreasury_ == address(0)) {
             revert Blueprint_OperationalTreasuryAddressZero();
         }
@@ -257,8 +253,8 @@ contract Blueprint is
      * @param opId The off-chain identifier of the operation.
      * @return The current operation.
      */
-    function _getAndCheckOperation(bytes32 opId) internal view returns (Operation storage) {
-        Operation storage operation = _operations[opId];
+    function _getAndCheckOperation(bytes32 opId, BlueprintStorage storage $) internal view returns (Operation storage) {
+        Operation storage operation = $.operations[opId];
         if (operation.status != OperationStatus.Nonexistent) {
             revert Blueprint_OperationAlreadyExecuted(opId);
         }
