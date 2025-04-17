@@ -33,34 +33,40 @@ alwaysApply: false
 
 # 2. Initializers Rules
 
-1.  Upgradable abstract contracts must include two internal initializer functions: the main and unchained one.
-    E.g. for the `PausableExtUpgradeable` abstract smart contract must have the following initializers: `__PausableExt_init()` and `__PausableExt_init_unchained()`.
+1.  Upgradable abstract contracts must include one or two internal initializer function: unchained one (mandatory) and main one (optional). 
+    E.g. for the `PausableExtUpgradeable` abstract smart contract must have the following initializers: `__PausableExt_init_unchained()` and `__PausableExt_init()`.
 
-2.  The main initializer of an upgradable abstract contract must call all NON-empty unchained initializers of all parent smart contracts.
+2.  The main initializer of an upgradable abstract contract must call all needed unchained (NOT main) initializers of
+    all parent smart contracts.
 
-3.  EMPTY unchained initializers of all parent contracts must NOT be called except initializers of parent smart contracts that are defined in the current project (see next point).
+3.  EMPTY unchained initializers of all parent contracts must NOT be called,
+    including one from the current smart contract.
 
-4.  The main initializer of an upgradable abstract contract must call all EMPTY unchained initializers of parent smart contracts that are defined in the current project.
+4.  If both (main and unchained) internal initializers of an upgradable abstract contract are empty then
+    only the unchained initializer must be kept. The main initializer must be removed.
+    A comment can be added about that, like: `Note: The "..._init()" initializer has not been provided as redundant`.
+
+5.  Upgradable non-abstract contracts must include a single external or public initializer named `initilize()`.
+
+6.  The initializer of a non-abstract contract must call all NON-empty internal initializers of
+    all parent smart contracts in the order of inheritance.
+    If a parent smart contract has two initializers, the main one must be called inside the `initilize()` function.
+
+7.  EMPTY internal initializers of all parent contracts must NOT be called inside the `initilize()` function
+    except initializers of parent smart contracts that are defined in the current project (see next point).
+
+8.  The initializer of a non-abstract contract must call all EMPTY internal initializers of
+    parent smart contracts that are defined in the current project.
     This is important to avoid errors during test coverage assessment.
 
-5.  The main initializer of an upgradable abstract contract must call the unchained initializer of the same contract if and only the latter is NOT empty. 
+9.  Internal initializers must use the `onlyInitializing` modifier.
 
-6.  Upgradable non-abstract contracts must include a single external or public initializer named `initilize()`.
+10. External and public initializers must use the `initializer` modifier.
 
-7.  The initializer of a non-abstract contract must call all NON-empty internal main initializers of all parent smart contracts.
+11. All initializers must be documented with NatSpec comments, including descriptions for all input parameters (if any).
 
-8.  EMPTY internal main initializers of all parent contracts must NOT be called except initializers of parent smart contracts that are defined in the current project (see next point).
-
-9.  The initializer of a non-abstract contract must call all EMPTY internal main initializers of parent smart contracts that are defined in the current project.
-    This is important to avoid errors during test coverage assessment.
-
-10. Internal initializers must use the `onlyInitializing` modifier.
-
-11. External and public initializers must use the `initializer` modifier.
-
-12. All initializers must be documented with NatSpec comments, including descriptions for all input parameters (if any).
-
-13. In the NatSpec comments of an initializer the link to the OpenZeppelin's upgradeable pattern must be included, like:
+12. In the NatSpec comments of the initializer of a non-abstract contract the link to
+    the OpenZeppelin's upgradeable pattern documentation must be included, like:
     ```solidity
     /**
      * @dev Initializer of the upgradable contract.
@@ -69,6 +75,15 @@ alwaysApply: false
      */
     ```
 
+13. In the NatSpec comments of the internal initializer of an abstract contract the link to
+    the OpenZeppelin's documentation about multiple inheritance in upgradeable contracts must be included, like:
+    ```solidity
+    /**
+     * @dev The unchained internal initializer of the upgradable contract
+     *
+     * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
+     */
+    ```
 
 # 3. Error Handling Rules
 
