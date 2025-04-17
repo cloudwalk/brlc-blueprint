@@ -14,7 +14,7 @@ import { IBlueprint } from "./interfaces/IBlueprint.sol";
 import { IBlueprintPrimary } from "./interfaces/IBlueprint.sol";
 import { IBlueprintConfiguration } from "./interfaces/IBlueprint.sol";
 
-import {BlueprintStorageLayout} from "./BlueprintStorageLayout.sol";
+import { BlueprintStorageLayout } from "./BlueprintStorageLayout.sol";
 
 /**
  * @title Blueprint contract
