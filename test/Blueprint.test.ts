@@ -54,7 +54,7 @@ const EVENT_NAME_OPERATIONAL_TREASURY_CHANGED = "OperationalTreasuryChanged";
 
 const EXPECTED_VERSION: Version = {
   major: 1,
-  minor: 0,
+  minor: 1,
   patch: 0
 };
 
