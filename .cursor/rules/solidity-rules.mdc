@@ -6,25 +6,28 @@ alwaysApply: false
 
 # 1. General Instructions
 
-1. Act as an expert in Solidity and smart contract security.
+1.  Act as an expert in Solidity and smart contract security.
 
-2. Follow the structure, development approaches, styles, formatting, comments according to the example project from section 6 `Example Project`.
+2.  Follow the structure, development approaches, styles, formatting, comments according to the example project
+    from section 6 `Example Project`.
 
-3. Follow the Solidity Style Guide from the language official documentation.
+3.  Follow the Solidity Style Guide from the language official documentation.
 
-4. Follow best practices and security recommendations from reputable companies and individuals.
+4.  Follow best practices and security recommendations from reputable companies and individuals.
 
-5. Use abstract contracts for base functionality that will be inherited.
+5.  Use abstract contracts for base functionality that will be inherited.
 
-6. Use the base `Version` contract to add version information to production contracts. Do NOT add the version to intermediate and basic contracts.
+6.  Use the base `Version` contract to add version information to production contracts.
+    Do NOT add the version to intermediate and basic contracts.
 
-7. Separate storage layouts into dedicated contracts (like `BlueprintStorage`).
+7.  Separate storage layouts into dedicated contracts (like `BlueprintStorage`).
 
-8. Follow a consistent pattern for contract inheritance.
+8.  Follow a consistent pattern for contract inheritance.
 
-9. Use interfaces to define external contract interactions.
+9.  Use interfaces to define external contract interactions.
 
-10. Implement proper storage gap variables (like `uint256[46] private __gap`) in upgradeable production contracts. Do NOT add gap variables to intermediate and basic contracts.
+10. Implement proper storage gap variables (like `uint256[46] private __gap`) in upgradeable production contracts.
+    Do NOT add gap variables to intermediate and basic contracts.
 
 11. Create testable versions of contracts with additional helper functions if needed.
 
@@ -33,8 +36,10 @@ alwaysApply: false
 
 # 2. Initializers Rules
 
-1.  Upgradable abstract contracts must include one or two internal initializer function: unchained one (mandatory) and main one (optional). 
-    E.g. for the `PausableExtUpgradeable` abstract smart contract must have the following initializers: `__PausableExt_init_unchained()` and `__PausableExt_init()`.
+1.  Upgradable abstract contracts must include one or two internal initializer function:
+    unchained one (mandatory) and main one (optional). 
+    E.g. for the `PausableExtUpgradeable` abstract smart contract must have the following initializers:
+    `__PausableExt_init_unchained()` and `__PausableExt_init()`.
 
 2.  The main initializer of an upgradable abstract contract must call all needed unchained (NOT main) initializers of
     all parent smart contracts.
@@ -104,7 +109,9 @@ alwaysApply: false
 
 4. Index event parameters that might be used for filtering.
 
-5. Document events in NatSpec comments of functions that emit them, using the formats like: `Emits an {EventName} event`, `Emits an {EventName} event for each ...`. Do not inlcude events that are NOT defined in the project files, e.g. from third-party libraries.
+5. Document events in NatSpec comments of functions that emit them, using the formats like:
+   `Emits an {EventName} event`, `Emits an {EventName} event for each ...`.
+   Do not inlcude events that are NOT defined in the project files, e.g. from third-party libraries.
 
 
 # 5. Comments Rules
@@ -125,9 +132,9 @@ alwaysApply: false
        abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {....}
     ```
 
-5.  Sections of code within interfaces, contracts, libraries must be separated by section separator comments, for example:
+5.  Sections of code within interfaces, contracts, libraries must be separated by section separator comments, e.g.:
     ```solidity
-    contract Blueprint {
+    contract MyContract {
         // ------------------ Constants ------------------------------- //
 
         ....
@@ -158,7 +165,7 @@ alwaysApply: false
         // ------------------ Pure functions -------------------------- //
 
         ....
-        function proveBlueprint() external pure {}
+        function proveMyContract() external pure {}
         ....
 
         // ------------------ Internal functions ---------------------- //
@@ -173,7 +180,8 @@ alwaysApply: false
 
 7.  The first section separator comment in an interface, contract, or library may be omitted.
 
-8.  The section separator comment must be omitted if the interface, contract, or library contains only one logical section. Example: an interface containing only a list of custom errors.
+8.  The section separator comment must be omitted if the interface, contract, library contains only one logical section.
+    Example: an interface containing only a list of custom errors.
 
 9.  NatSpec comments for an enum must include descriptions for all enum values including their number equivalents like:
     ```solidity
@@ -226,7 +234,8 @@ alwaysApply: false
     }
     ```
 
-12. Structures that fit into a single storage slot must not include comments about slot numbers, but still must have comments about free space to the end of the storage slot.
+12. Structures that fit into a single storage slot must not include comments about slot numbers,
+    but still must have comments about free space to the end of the storage slot.
 
 
 # 6. Example Project
