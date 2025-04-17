@@ -47,13 +47,6 @@ describe("Contracts 'UUPSExtUpgradeable'", async () => {
       ).to.be.revertedWithCustomError(uupsExtension, REVERT_ERROR_IF_CONTRACT_INITIALIZATION_IS_INVALID);
     });
 
-    it("The internal initializer is reverted if it is called outside the init process", async () => {
-      const { uupsExtension } = await setUpFixture(deployContract);
-      await expect(
-        uupsExtension.callParentInitializer()
-      ).to.be.revertedWithCustomError(uupsExtension, REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING);
-    });
-
     it("The internal unchained initializer is reverted if it is called outside the init process", async () => {
       const { uupsExtension } = await setUpFixture(deployContract);
       await expect(

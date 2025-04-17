@@ -25,22 +25,16 @@ contract AccessControlExtUpgradeableMock is AccessControlExtUpgradeable, UUPSUpg
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
     function initialize() public initializer {
-        __AccessControlExt_init(); // This is needed only to avoid errors during coverage assessment
+        __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
 
         _setRoleAdmin(USER_ROLE, OWNER_ROLE);
         _grantRole(OWNER_ROLE, _msgSender());
 
         // Only to provide the 100 % test coverage
         _authorizeUpgrade(address(0));
-        __AccessControlExt_init_unchained();
     }
 
     // ------------------ Transactional functions ----------------- //
-
-    /// @dev Calls the parent internal initializing function to verify the 'onlyInitializing' modifier.
-    function callParentInitializer() external {
-        __AccessControlExt_init();
-    }
 
     /// @dev Calls the parent internal unchained initializing function to verify the 'onlyInitializing' modifier.
     function callParentInitializerUnchained() external {

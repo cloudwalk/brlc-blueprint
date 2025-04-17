@@ -21,18 +21,10 @@ contract UUPSExtUpgradeableMock is UUPSExtUpgradeable {
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
     function initialize() public initializer {
-        __UUPSExt_init(); // This is needed only to avoid errors during coverage assessment
-
-        // Only to provide the 100 % test coverage
-        __UUPSExt_init_unchained();
+        __UUPSExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
     }
 
     // ------------------ Transactional functions ----------------- //
-
-    /// @dev Calls the parent internal initializing function to verify the 'onlyInitializing' modifier.
-    function callParentInitializer() external {
-        __UUPSExt_init();
-    }
 
     /// @dev Calls the parent internal unchained initializing function to verify the 'onlyInitializing' modifier.
     function callParentInitializerUnchained() external {

@@ -14,16 +14,11 @@ abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev Internal initializer of the upgradable contract.
+     * @dev The unchained internal initializer of the upgradable contract
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
-     */
-    function __AccessControlExt_init() internal onlyInitializing {}
-
-    /**
-     * @dev Unchained internal initializer of the upgradable contract.
+     * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     * Note: The `..._init()` initializer has not been provided as redundant.
      */
     function __AccessControlExt_init_unchained() internal onlyInitializing {}
 

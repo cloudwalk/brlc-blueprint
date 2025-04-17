@@ -23,7 +23,7 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
     /**
      * @dev Internal initializer of the upgradable contract.
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
      * @param rescuerRoleAdmin The admin for the {RESCUER_ROLE} role.
      */
@@ -34,7 +34,7 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
     /**
      * @dev Unchained internal initializer of the upgradable contract.
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
      * @param rescuerRoleAdmin The admin for the {RESCUER_ROLE} role.
      */

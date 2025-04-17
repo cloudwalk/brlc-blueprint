@@ -63,13 +63,6 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
       ).to.be.revertedWithCustomError(accessControlExtMock, REVERT_ERROR_IF_CONTRACT_INITIALIZATION_IS_INVALID);
     });
 
-    it("The internal initializer is reverted if it is called outside the init process", async () => {
-      const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
-      await expect(
-        accessControlExtMock.callParentInitializer()
-      ).to.be.revertedWithCustomError(accessControlExtMock, REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING);
-    });
-
     it("The internal unchained initializer is reverted if it is called outside the init process", async () => {
       const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
       await expect(

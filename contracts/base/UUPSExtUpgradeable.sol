@@ -19,16 +19,11 @@ abstract contract UUPSExtUpgradeable is UUPSUpgradeable {
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev Internal initializer of the upgradable contract.
-     *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
-     */
-    function __UUPSExt_init() internal onlyInitializing {}
-
-    /**
      * @dev Unchained internal initializer of the upgradable contract.
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
+     *
+     * Note: The `..._init()` initializer has not been provided as redundant.
      */
     function __UUPSExt_init_unchained() internal onlyInitializing {}
 
