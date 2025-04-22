@@ -25,7 +25,6 @@ abstract contract PausableExtUpgradeable is AccessControlUpgradeable, PausableUp
      * @param pauserRoleAdmin The admin for the {PAUSER_ROLE} role.
      */
     function __PausableExt_init(bytes32 pauserRoleAdmin) internal onlyInitializing {
-        __Pausable_init_unchained();
         __PausableExt_init_unchained(pauserRoleAdmin);
     }
 
