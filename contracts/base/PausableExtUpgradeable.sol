@@ -2,9 +2,8 @@
 
 pragma solidity ^0.8.20;
 
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-
-import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
 
 /**
  * @title PausableExtUpgradeable base contract
@@ -12,7 +11,7 @@ import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
  * @dev Extends the OpenZeppelin's {PausableUpgradeable} contract by adding the {PAUSER_ROLE} role and implementing
  *      the external pausing and unpausing functions.
  */
-abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, PausableUpgradeable {
+abstract contract PausableExtUpgradeable is AccessControlUpgradeable, PausableUpgradeable {
     /// @dev The role of pauser that is allowed to trigger the paused or unpaused state of the contract.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 

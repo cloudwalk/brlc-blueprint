@@ -4,15 +4,14 @@ pragma solidity ^0.8.20;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 /**
  * @title RescuableUpgradeable base contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev Allows to rescue ERC20 tokens locked up in the contract using the {RESCUER_ROLE} role.
  */
-abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
+abstract contract RescuableUpgradeable is AccessControlUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @dev The role of rescuer that is allowed to rescue tokens locked up in the contract.

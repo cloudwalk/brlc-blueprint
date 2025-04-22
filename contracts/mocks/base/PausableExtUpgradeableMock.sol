@@ -23,7 +23,6 @@ contract PausableExtUpgradeableMock is PausableExtUpgradeable, UUPSUpgradeable {
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
     function initialize() public initializer {
-        __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
         __PausableExt_init(OWNER_ROLE);
 
         _grantRole(OWNER_ROLE, _msgSender());
