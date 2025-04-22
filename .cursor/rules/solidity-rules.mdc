@@ -41,7 +41,7 @@ alwaysApply: false
     E.g. for the `PausableExtUpgradeable` abstract smart contract must have the following initializers:
     `__PausableExt_init_unchained()` and `__PausableExt_init()`.
 
-2.  The main initializer of an upgradable abstract contract must call all needed unchained (NOT main) initializers of
+2.  The main initializer of an upgradable abstract contract must call all NON-EMPTY initializers (unchained or main) of
     all parent smart contracts.
 
 3.  EMPTY unchained initializers of all parent contracts must NOT be called,
