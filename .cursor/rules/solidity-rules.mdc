@@ -995,8 +995,12 @@ alwaysApply: false
          * @param accounts The accounts to grant the role to.
          */
         function grantRoleBatch(bytes32 role, address[] memory accounts) public virtual onlyRole(getRoleAdmin(role)) {
-            for (uint256 i = 0; i < accounts.length; i++) {
+            uint256 count = accounts.length;
+            for (uint256 i = 0; i < count; ) {
                 _grantRole(role, accounts[i]);
+                unchecked {
+                    ++i;
+                }
             }
         }
 
@@ -1011,8 +1015,12 @@ alwaysApply: false
          * @param accounts The accounts to revoke the role from.
          */
         function revokeRoleBatch(bytes32 role, address[] memory accounts) public virtual onlyRole(getRoleAdmin(role)) {
-            for (uint256 i = 0; i < accounts.length; i++) {
+            uint256 count = accounts.length;
+            for (uint256 i = 0; i < count; ) {
                 _revokeRole(role, accounts[i]);
+                unchecked {
+                    ++i;
+                }
             }
         }
     }
@@ -1024,9 +1032,8 @@ alwaysApply: false
 
     pragma solidity ^0.8.20;
 
+    import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
     import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-
-    import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
 
     /**
      * @title PausableExtUpgradeable base contract
@@ -1034,7 +1041,7 @@ alwaysApply: false
      * @dev Extends the OpenZeppelin's {PausableUpgradeable} contract by adding the {PAUSER_ROLE} role and implementing
      *      the external pausing and unpausing functions.
      */
-    abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, PausableUpgradeable {
+    abstract contract PausableExtUpgradeable is AccessControlUpgradeable, PausableUpgradeable {
         /// @dev The role of pauser that is allowed to trigger the paused or unpaused state of the contract.
         bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
@@ -1093,15 +1100,14 @@ alwaysApply: false
 
     import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
     import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-    import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
+    import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
     /**
      * @title RescuableUpgradeable base contract
      * @author CloudWalk Inc. (See https://www.cloudwalk.io)
      * @dev Allows to rescue ERC20 tokens locked up in the contract using the {RESCUER_ROLE} role.
      */
-    abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
+    abstract contract RescuableUpgradeable is AccessControlUpgradeable {
         using SafeERC20 for IERC20;
 
         /// @dev The role of rescuer that is allowed to rescue tokens locked up in the contract.
@@ -1325,7 +1331,6 @@ alwaysApply: false
          * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
          */
         function initialize() public initializer {
-            __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
             __PausableExt_init(OWNER_ROLE);
 
             _grantRole(OWNER_ROLE, _msgSender());
@@ -1385,7 +1390,6 @@ alwaysApply: false
          * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
          */
         function initialize() public initializer {
-            __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
             __Rescuable_init(OWNER_ROLE);
 
             _grantRole(OWNER_ROLE, _msgSender());
