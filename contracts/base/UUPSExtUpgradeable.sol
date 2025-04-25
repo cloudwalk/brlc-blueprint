@@ -10,6 +10,8 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
  * @dev Extends the OpenZeppelin's {UUPSUpgradeable} contract with additional checks for the new implementation address.
  */
 abstract contract UUPSExtUpgradeable is UUPSUpgradeable {
+    // ------------------ Errors ---------------------------------- //
+
     /// @dev Thrown if the provided new implementation address is not a contract.
     error UUPSExtUpgradeable_ImplementationAddressNotContract();
 

@@ -12,6 +12,8 @@ import { PausableExtUpgradeable } from "../../base/PausableExtUpgradeable.sol";
  * @dev An implementation of the {PausableExtUpgradeable} contract for test purposes.
  */
 contract PausableExtUpgradeableMock is PausableExtUpgradeable, UUPSUpgradeable {
+    // ------------------ Constants ------------------------------- //
+
     /// @dev The role of this contract owner.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 

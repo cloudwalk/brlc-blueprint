@@ -8,6 +8,8 @@ pragma solidity ^0.8.0;
  * @dev Defines code entities to get the version of a contract.
  */
 interface IVersionable {
+    // ------------------ Types ---------------------------------- //
+
     /**
      * @dev Defines the version of a contract.
      *
@@ -22,6 +24,8 @@ interface IVersionable {
         uint16 minor;
         uint16 patch;
     }
+
+    // ------------------ Pure functions -------------------------- //
 
     /// @dev Returns the version of the contract.
     function $__VERSION() external pure returns (Version memory);

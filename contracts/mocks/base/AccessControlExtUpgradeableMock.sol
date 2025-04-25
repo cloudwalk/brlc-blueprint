@@ -12,6 +12,8 @@ import { AccessControlExtUpgradeable } from "../../base/AccessControlExtUpgradea
  * @dev An implementation of the {AccessControlExtUpgradeable} contract for test purposes.
  */
 contract AccessControlExtUpgradeableMock is AccessControlExtUpgradeable, UUPSUpgradeable {
+    // ------------------ Constants ------------------------------- //
+
     /// @dev The role of this contract owner.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     /// @dev The role of a user of this contract.

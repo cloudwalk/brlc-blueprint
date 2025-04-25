@@ -12,6 +12,8 @@ import { RescuableUpgradeable } from "../../base/RescuableUpgradeable.sol";
  * @dev An implementation of the {RescuableUpgradeable} contract for test purposes.
  */
 contract RescuableUpgradeableMock is RescuableUpgradeable, UUPSUpgradeable {
+    // ------------------ Constants ------------------------------- //
+
     /// @dev The role of this contract owner.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 

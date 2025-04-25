@@ -10,6 +10,8 @@ import { UUPSExtUpgradeable } from "../../base/UUPSExtUpgradeable.sol";
  * @dev An implementation of the {UUPSExtUpgradable} contract for test purposes.
  */
 contract UUPSExtUpgradeableMock is UUPSExtUpgradeable {
+    // ------------------ Events ---------------------------------- //
+
     /// @dev Emitted when the internal `_validateUpgrade()` function is called with the parameters of the function.
     event MockValidateUpgradeCall(address newImplementation);
 

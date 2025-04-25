@@ -10,6 +10,8 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @dev An implementation of the {ERC20} contract for testing purposes.
  */
 contract ERC20TokenMock is ERC20 {
+    // ------------------ Constructor ----------------------------- //
+
     /**
      * @dev The constructor of the contract.
      * @param name_ The name of the token to set for this ERC20-comparable contract.
