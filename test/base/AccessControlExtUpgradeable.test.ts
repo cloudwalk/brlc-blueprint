@@ -134,70 +134,70 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
         ).withArgs(attacker.address, OWNER_ROLE);
       });
     });
+  });
 
-    describe("Function 'revokeRoleBatch()'", async () => {
-      describe("Executes as expected if the input account array contains", async () => {
-        it("A single account with the previously granted role", async () => {
-          const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
-          await proveTx(accessControlExtMock.grantRoleBatch(USER_ROLE, [userAddresses[0]]));
-          expect(await accessControlExtMock.hasRole(USER_ROLE, userAddresses[0])).to.equal(true);
+  describe("Function 'revokeRoleBatch()'", async () => {
+    describe("Executes as expected if the input account array contains", async () => {
+      it("A single account with the previously granted role", async () => {
+        const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
+        await proveTx(accessControlExtMock.grantRoleBatch(USER_ROLE, [userAddresses[0]]));
+        expect(await accessControlExtMock.hasRole(USER_ROLE, userAddresses[0])).to.equal(true);
 
-          await expect(
-            accessControlExtMock.revokeRoleBatch(USER_ROLE, [userAddresses[0]])
-          ).to.emit(
-            accessControlExtMock,
-            EVENT_NAME_ROLE_REVOKED
-          ).withArgs(USER_ROLE, userAddresses[0], deployer.address);
+        await expect(
+          accessControlExtMock.revokeRoleBatch(USER_ROLE, [userAddresses[0]])
+        ).to.emit(
+          accessControlExtMock,
+          EVENT_NAME_ROLE_REVOKED
+        ).withArgs(USER_ROLE, userAddresses[0], deployer.address);
 
-          expect(await accessControlExtMock.hasRole(USER_ROLE, userAddresses[0])).to.equal(false);
-        });
-
-        it("A single account without the previously granted role", async () => {
-          const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
-          expect(await accessControlExtMock.hasRole(USER_ROLE, userAddresses[0])).to.equal(false);
-
-          await expect(
-            accessControlExtMock.revokeRoleBatch(USER_ROLE, [userAddresses[0]])
-          ).not.to.emit(accessControlExtMock, EVENT_NAME_ROLE_REVOKED);
-        });
-
-        it("Multiple accounts with the previously granted role", async () => {
-          const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
-          await proveTx(accessControlExtMock.grantRoleBatch(USER_ROLE, userAddresses));
-          for (const userAddress of userAddresses) {
-            expect(await accessControlExtMock.hasRole(USER_ROLE, userAddress)).to.equal(true);
-          }
-
-          const tx: Promise<TransactionResponse> = accessControlExtMock.revokeRoleBatch(USER_ROLE, userAddresses);
-
-          for (const userAddress of userAddresses) {
-            await expect(tx)
-              .to.emit(accessControlExtMock, EVENT_NAME_ROLE_REVOKED)
-              .withArgs(USER_ROLE, userAddress, deployer.address);
-            expect(await accessControlExtMock.hasRole(USER_ROLE, userAddress)).to.equal(false);
-          }
-        });
-
-        it("No accounts", async () => {
-          const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
-
-          await expect(
-            accessControlExtMock.revokeRoleBatch(USER_ROLE, [])
-          ).not.to.emit(accessControlExtMock, EVENT_NAME_ROLE_REVOKED);
-        });
+        expect(await accessControlExtMock.hasRole(USER_ROLE, userAddresses[0])).to.equal(false);
       });
 
-      describe("Is reverted if", async () => {
-        it("The sender does not have the expected admin role", async () => {
-          const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
+      it("A single account without the previously granted role", async () => {
+        const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
+        expect(await accessControlExtMock.hasRole(USER_ROLE, userAddresses[0])).to.equal(false);
 
-          await expect(
-            connect(accessControlExtMock, attacker).revokeRoleBatch(USER_ROLE, [])
-          ).to.be.revertedWithCustomError(
-            accessControlExtMock,
-            REVERT_ERROR_IF_UNAUTHORIZED_ACCOUNT
-          ).withArgs(attacker.address, OWNER_ROLE);
-        });
+        await expect(
+          accessControlExtMock.revokeRoleBatch(USER_ROLE, [userAddresses[0]])
+        ).not.to.emit(accessControlExtMock, EVENT_NAME_ROLE_REVOKED);
+      });
+
+      it("Multiple accounts with the previously granted role", async () => {
+        const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
+        await proveTx(accessControlExtMock.grantRoleBatch(USER_ROLE, userAddresses));
+        for (const userAddress of userAddresses) {
+          expect(await accessControlExtMock.hasRole(USER_ROLE, userAddress)).to.equal(true);
+        }
+
+        const tx: Promise<TransactionResponse> = accessControlExtMock.revokeRoleBatch(USER_ROLE, userAddresses);
+
+        for (const userAddress of userAddresses) {
+          await expect(tx)
+            .to.emit(accessControlExtMock, EVENT_NAME_ROLE_REVOKED)
+            .withArgs(USER_ROLE, userAddress, deployer.address);
+          expect(await accessControlExtMock.hasRole(USER_ROLE, userAddress)).to.equal(false);
+        }
+      });
+
+      it("No accounts", async () => {
+        const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
+
+        await expect(
+          accessControlExtMock.revokeRoleBatch(USER_ROLE, [])
+        ).not.to.emit(accessControlExtMock, EVENT_NAME_ROLE_REVOKED);
+      });
+    });
+
+    describe("Is reverted if", async () => {
+      it("The sender does not have the expected admin role", async () => {
+        const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
+
+        await expect(
+          connect(accessControlExtMock, attacker).revokeRoleBatch(USER_ROLE, [])
+        ).to.be.revertedWithCustomError(
+          accessControlExtMock,
+          REVERT_ERROR_IF_UNAUTHORIZED_ACCOUNT
+        ).withArgs(attacker.address, OWNER_ROLE);
       });
     });
   });
