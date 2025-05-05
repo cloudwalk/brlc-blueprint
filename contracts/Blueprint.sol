@@ -59,8 +59,8 @@ contract Blueprint is
      */
     function initialize(address token_) external initializer {
         __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
-        __PausableExt_init(OWNER_ROLE);
-        __Rescuable_init(OWNER_ROLE);
+        __PausableExt_init_unchained();
+        __Rescuable_init_unchained();
         __UUPSExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
 
         if (token_ == address(0)) {

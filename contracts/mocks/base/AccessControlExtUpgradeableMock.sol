@@ -12,10 +12,6 @@ import { AccessControlExtUpgradeable } from "../../base/AccessControlExtUpgradea
  * @dev An implementation of the {AccessControlExtUpgradeable} contract for test purposes.
  */
 contract AccessControlExtUpgradeableMock is AccessControlExtUpgradeable, UUPSUpgradeable {
-    // ------------------ Constants ------------------------------- //
-
-    /// @dev The role of this contract owner.
-    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
     /// @dev The role of a user of this contract.
     bytes32 public constant USER_ROLE = keccak256("USER_ROLE");
 
@@ -27,7 +23,7 @@ contract AccessControlExtUpgradeableMock is AccessControlExtUpgradeable, UUPSUpg
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
     function initialize() public initializer {
-        __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
+        __AccessControlExt_init_unchained();
 
         _setRoleAdmin(USER_ROLE, OWNER_ROLE);
         _grantRole(OWNER_ROLE, _msgSender());

@@ -14,9 +14,6 @@ import { IBlueprintTypes } from "./interfaces/IBlueprintTypes.sol";
 abstract contract BlueprintStorageLayout is IBlueprintTypes {
     // ------------------ Constants ------------------------------- //
 
-    /// @dev The role of this contract owner.
-    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-
     /// @dev The role of manager that is allowed to deposit and withdraw tokens to the contract.
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 

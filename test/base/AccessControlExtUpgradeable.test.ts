@@ -9,11 +9,10 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
   const EVENT_NAME_ROLE_GRANTED = "RoleGranted";
   const EVENT_NAME_ROLE_REVOKED = "RoleRevoked";
 
-  const REVERT_ERROR_IF_CONTRACT_INITIALIZATION_IS_INVALID = "InvalidInitialization";
-  const REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING = "NotInitializing";
-  const REVERT_ERROR_IF_UNAUTHORIZED_ACCOUNT = "AccessControlUnauthorizedAccount";
+  const REVERT_ERROR_CONTRACT_INITIALIZATION_IS_INVALID = "InvalidInitialization";
+  const REVERT_ERROR_CONTRACT_IS_NOT_INITIALIZING = "NotInitializing";
+  const REVERT_ERROR_UNAUTHORIZED_ACCOUNT = "AccessControlUnauthorizedAccount";
 
-  const DEFAULT_ADMIN_ROLE: string = ethers.ZeroHash;
   const OWNER_ROLE: string = ethers.id("OWNER_ROLE");
   const USER_ROLE: string = ethers.id("USER_ROLE");
 
@@ -49,7 +48,7 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
       expect((await accessControlExtMock.USER_ROLE()).toLowerCase()).to.equal(USER_ROLE);
 
       // The role admins
-      expect(await accessControlExtMock.getRoleAdmin(OWNER_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
+      expect(await accessControlExtMock.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE);
       expect(await accessControlExtMock.getRoleAdmin(USER_ROLE)).to.equal(OWNER_ROLE);
 
       // The deployer should have the owner role, but not the other roles
@@ -60,14 +59,14 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
       const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
       await expect(
         accessControlExtMock.initialize()
-      ).to.be.revertedWithCustomError(accessControlExtMock, REVERT_ERROR_IF_CONTRACT_INITIALIZATION_IS_INVALID);
+      ).to.be.revertedWithCustomError(accessControlExtMock, REVERT_ERROR_CONTRACT_INITIALIZATION_IS_INVALID);
     });
 
     it("The internal unchained initializer is reverted if it is called outside the init process", async () => {
       const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
       await expect(
         accessControlExtMock.callParentInitializerUnchained()
-      ).to.be.revertedWithCustomError(accessControlExtMock, REVERT_ERROR_IF_CONTRACT_IS_NOT_INITIALIZING);
+      ).to.be.revertedWithCustomError(accessControlExtMock, REVERT_ERROR_CONTRACT_IS_NOT_INITIALIZING);
     });
   });
 
@@ -130,7 +129,7 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
           connect(accessControlExtMock, attacker).grantRoleBatch(USER_ROLE, [])
         ).to.be.revertedWithCustomError(
           accessControlExtMock,
-          REVERT_ERROR_IF_UNAUTHORIZED_ACCOUNT
+          REVERT_ERROR_UNAUTHORIZED_ACCOUNT
         ).withArgs(attacker.address, OWNER_ROLE);
       });
     });
@@ -196,7 +195,7 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
           connect(accessControlExtMock, attacker).revokeRoleBatch(USER_ROLE, [])
         ).to.be.revertedWithCustomError(
           accessControlExtMock,
-          REVERT_ERROR_IF_UNAUTHORIZED_ACCOUNT
+          REVERT_ERROR_UNAUTHORIZED_ACCOUNT
         ).withArgs(attacker.address, OWNER_ROLE);
       });
     });
