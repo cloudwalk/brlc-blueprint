@@ -58,7 +58,7 @@ contract Blueprint is
      * @param token_ The address of the token to set as the underlying one.
      */
     function initialize(address token_) external initializer {
-        __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
+        __AccessControlExt_init_unchained();
         __PausableExt_init_unchained();
         __Rescuable_init_unchained();
         __UUPSExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
@@ -69,8 +69,7 @@ contract Blueprint is
 
         _getBlueprintStorage().token = token_;
 
-        _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
-        _setRoleAdmin(MANAGER_ROLE, OWNER_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, GRANTOR_ROLE);
         _grantRole(OWNER_ROLE, _msgSender());
     }
 

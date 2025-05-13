@@ -10,6 +10,7 @@ const ALLOWANCE_MAX = ethers.MaxUint256;
 const BALANCE_INITIAL = 1000_000_000_000n;
 
 const OWNER_ROLE: string = ethers.id("OWNER_ROLE");
+const GRANTOR_ROLE: string = ethers.id("GRANTOR_ROLE");
 const PAUSER_ROLE: string = ethers.id("PAUSER_ROLE");
 const RESCUER_ROLE: string = ethers.id("RESCUER_ROLE");
 const MANAGER_ROLE: string = ethers.id("MANAGER_ROLE");
@@ -171,6 +172,7 @@ describe("Contracts 'Blueprint'", async () => {
     const fixture = await deployContracts();
     const { blueprint, tokenMock } = fixture;
 
+    await proveTx(blueprint.grantRole(GRANTOR_ROLE, deployer.address));
     await proveTx(blueprint.grantRole(MANAGER_ROLE, manager.address));
     await proveTx(connect(tokenMock, operationalTreasury).approve(getAddress(blueprint), ALLOWANCE_MAX));
     await proveTx(blueprint.setOperationalTreasury(operationalTreasury.address));
@@ -219,6 +221,7 @@ describe("Contracts 'Blueprint'", async () => {
   }
 
   async function pauseContract(contract: Contract) {
+    await proveTx(contract.grantRole(GRANTOR_ROLE, deployer.address));
     await proveTx(contract.grantRole(PAUSER_ROLE, deployer.address));
     await proveTx(contract.pause());
   }
@@ -272,18 +275,21 @@ describe("Contracts 'Blueprint'", async () => {
 
       // Role hashes
       expect(await blueprint.OWNER_ROLE()).to.equal(OWNER_ROLE);
+      expect(await blueprint.GRANTOR_ROLE()).to.equal(GRANTOR_ROLE);
       expect(await blueprint.PAUSER_ROLE()).to.equal(PAUSER_ROLE);
       expect(await blueprint.RESCUER_ROLE()).to.equal(RESCUER_ROLE);
       expect(await blueprint.MANAGER_ROLE()).to.equal(MANAGER_ROLE);
 
       // The role admins
       expect(await blueprint.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE);
-      expect(await blueprint.getRoleAdmin(PAUSER_ROLE)).to.equal(OWNER_ROLE);
-      expect(await blueprint.getRoleAdmin(RESCUER_ROLE)).to.equal(OWNER_ROLE);
-      expect(await blueprint.getRoleAdmin(MANAGER_ROLE)).to.equal(OWNER_ROLE);
+      expect(await blueprint.getRoleAdmin(GRANTOR_ROLE)).to.equal(OWNER_ROLE);
+      expect(await blueprint.getRoleAdmin(PAUSER_ROLE)).to.equal(GRANTOR_ROLE);
+      expect(await blueprint.getRoleAdmin(RESCUER_ROLE)).to.equal(GRANTOR_ROLE);
+      expect(await blueprint.getRoleAdmin(MANAGER_ROLE)).to.equal(GRANTOR_ROLE);
 
       // The deployer should have the owner role, but not the other roles
       expect(await blueprint.hasRole(OWNER_ROLE, deployer.address)).to.equal(true);
+      expect(await blueprint.hasRole(GRANTOR_ROLE, deployer.address)).to.equal(false);
       expect(await blueprint.hasRole(PAUSER_ROLE, deployer.address)).to.equal(false);
       expect(await blueprint.hasRole(RESCUER_ROLE, deployer.address)).to.equal(false);
       expect(await blueprint.hasRole(MANAGER_ROLE, deployer.address)).to.equal(false);
