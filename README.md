@@ -12,6 +12,15 @@ This repository contains Blueprint smart contracts.
 
 The Blueprint smart contract is designed as a reference and template one.
 
+This repository also provides rules files for the Cursor IDE.
+
+One of the rules files includes the example project generated from this repository.
+To update the example execute [the appropriate script file](scripts/updateExampleProject.ts) like:
+```bash
+ npx hardhat run scripts/updateExampleProject.ts 
+```
+
+
 ## Project Setup
 1. Clone the repo.
 2. Create the `.env` file based on the `.env.example` one:
