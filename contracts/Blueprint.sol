@@ -19,7 +19,8 @@ import { BlueprintStorageLayout } from "./BlueprintStorageLayout.sol";
 /**
  * @title Blueprint contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev The contract that responsible for freezing operations on the underlying token contract.
+ * @dev The smart contract is designed as a reference and template one.
+ * It executes deposit and withdrawal operations using the underlying token smart contract and store related data.
  *
  * See details about the contract in the comments of the {IBlueprint} interface.
  */

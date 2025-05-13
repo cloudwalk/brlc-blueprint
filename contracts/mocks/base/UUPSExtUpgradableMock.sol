@@ -33,6 +33,8 @@ contract UUPSExtUpgradeableMock is UUPSExtUpgradeable {
         __UUPSExt_init_unchained();
     }
 
+    // ------------------ Internal functions ---------------------- //
+
     /**
      * @dev An implementation of the validateUpgrade function of the UUPSExtUpgradeable contract.
      *

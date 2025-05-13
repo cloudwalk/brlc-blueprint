@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 import { Blueprint } from "../Blueprint.sol";
 
 /**
- * @title Blueprint contract
+ * @title BlueprintTestable contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The version of the blueprint contract with additions required for testing.
  * @custom:oz-upgrades-unsafe-allow missing-initializer
