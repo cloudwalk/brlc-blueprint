@@ -296,7 +296,8 @@ import { BlueprintStorageLayout } from "./BlueprintStorageLayout.sol";
 /**
  * @title Blueprint contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev The contract that responsible for freezing operations on the underlying token contract.
+ * @dev The smart contract is designed as a reference and template one.
+ * It executes deposit and withdrawal operations using the underlying token smart contract and store related data.
  *
  * See details about the contract in the comments of the {IBlueprint} interface.
  */
@@ -335,7 +336,7 @@ contract Blueprint is
      * @param token_ The address of the token to set as the underlying one.
      */
     function initialize(address token_) external initializer {
-        __AccessControlExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
+        __AccessControlExt_init_unchained();
         __PausableExt_init_unchained();
         __Rescuable_init_unchained();
         __UUPSExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
@@ -346,8 +347,7 @@ contract Blueprint is
 
         _getBlueprintStorage().token = token_;
 
-        _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
-        _setRoleAdmin(MANAGER_ROLE, OWNER_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, GRANTOR_ROLE);
         _grantRole(OWNER_ROLE, _msgSender());
     }
 
@@ -639,14 +639,17 @@ import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/ac
 /**
  * @title AccessControlExtUpgradeable base contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Extends the OpenZeppelin's {AccessControlUpgradeable} contract by adding the functions
- *      for granting and revoking roles in batch.
+ * @dev Extends the OpenZeppelin's {AccessControlUpgradeable} contract by introducing new roles and
+ *      adding the functions for granting and revoking roles in batch.
  */
 abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
     // ------------------ Constants ------------------------------- //
 
     /// @dev The role of this contract owner.
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+
+    /// @dev The role of grantor that is allowed to grant and revoke other roles, except itself and the owner one.
+    bytes32 public constant GRANTOR_ROLE = keccak256("GRANTOR_ROLE");
 
     // ------------------ Initializers ---------------------------- //
 
@@ -659,6 +662,7 @@ abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
      */
     function __AccessControlExt_init_unchained() internal onlyInitializing {
         _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
+        _setRoleAdmin(GRANTOR_ROLE, OWNER_ROLE);
     }
 
     // ------------------ Transactional functions ----------------- //
@@ -738,7 +742,7 @@ abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, Pausabl
      * Note: The `..._init()` initializer has not been provided as redundant.
      */
     function __PausableExt_init_unchained() internal onlyInitializing {
-        _setRoleAdmin(PAUSER_ROLE, OWNER_ROLE);
+        _setRoleAdmin(PAUSER_ROLE, GRANTOR_ROLE);
     }
 
     // ------------------ Transactional functions ----------------- //
@@ -800,7 +804,7 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
      * Note: The `..._init()` initializer has not been provided as redundant.
      */
     function __Rescuable_init_unchained() internal onlyInitializing {
-        _setRoleAdmin(RESCUER_ROLE, OWNER_ROLE);
+        _setRoleAdmin(RESCUER_ROLE, GRANTOR_ROLE);
     }
 
     // ------------------ Transactional functions ----------------- //
@@ -1272,7 +1276,7 @@ contract AccessControlExtUpgradeableMock is AccessControlExtUpgradeable, UUPSUpg
     function initialize() public initializer {
         __AccessControlExt_init_unchained();
 
-        _setRoleAdmin(USER_ROLE, OWNER_ROLE);
+        _setRoleAdmin(USER_ROLE, GRANTOR_ROLE);
         _grantRole(OWNER_ROLE, _msgSender());
 
         // Only to provide the 100 % test coverage
@@ -1442,6 +1446,8 @@ contract UUPSExtUpgradeableMock is UUPSExtUpgradeable {
         __UUPSExt_init_unchained();
     }
 
+    // ------------------ Internal functions ---------------------- //
+
     /**
      * @dev An implementation of the validateUpgrade function of the UUPSExtUpgradeable contract.
      *
@@ -1506,7 +1512,7 @@ pragma solidity ^0.8.24;
 import { Blueprint } from "../Blueprint.sol";
 
 /**
- * @title Blueprint contract
+ * @title BlueprintTestable contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The version of the blueprint contract with additions required for testing.
  * @custom:oz-upgrades-unsafe-allow missing-initializer
