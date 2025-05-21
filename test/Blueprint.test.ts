@@ -319,7 +319,7 @@ describe("Contracts 'Blueprint'", async () => {
 
       await expect(
         anotherBlueprintContract.initialize(ADDRESS_ZERO)
-      ).to.be.revertedWithCustomError(blueprintFactory, ERROR_NAME_TOKEN_ADDRESS_IS_ZERO);
+      ).to.be.revertedWithCustomError(anotherBlueprintContract, ERROR_NAME_TOKEN_ADDRESS_IS_ZERO);
     });
   });
 
