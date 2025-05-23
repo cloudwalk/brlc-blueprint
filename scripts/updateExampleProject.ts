@@ -94,7 +94,10 @@ function main(): void {
   const structure = scanDirectory(CONTRACTS_DIR);
   const startSymbol = fileContentToUpdate.indexOf(SECTION_START_STRING);
   if (startSymbol < 0) {
-    throw Error(`Section not found in the file to update. Section start string: ${SECTION_START_STRING}`);
+    throw Error(
+      `The example project section has not been found in the file to update. ` +
+      `File: "${FILE_TO_UPDATE}". Section start string: "${SECTION_START_STRING}"`
+    );
   }
 
   let documentation = fileContentToUpdate.slice(0, startSymbol + SECTION_START_STRING.length);
