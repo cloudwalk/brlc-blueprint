@@ -261,7 +261,7 @@ alwaysApply: false
       * `AccessControlExtUpgradeableMock.sol`
       * `PausableExtUpgradeableMock.sol`
       * `RescuableUpgradeableMock.sol`
-      * `UUPSExtUpgradableMock.sol`
+      * `UUPSExtUpgradeableMock.sol`
     * `tokens/`
       * `ERC20TokenMock.sol`
   * `testables/`
@@ -320,7 +320,7 @@ contract Blueprint is
 
     // ------------------ Constructor ----------------------------- //
 
-    /// @dev Constructor that prohibits the initialization of the implementation of the upgradable contract.
+    /// @dev Constructor that prohibits the initialization of the implementation of the upgradeable contract.
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -329,7 +329,7 @@ contract Blueprint is
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev Initializer of the upgradable contract.
+     * @dev Initializer of the upgradeable contract.
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      *
@@ -654,7 +654,7 @@ abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The unchained internal initializer of the upgradable contract
+     * @dev The unchained internal initializer of the upgradeable contract
      *
      * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
@@ -688,7 +688,7 @@ abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
     }
 
     /**
-     * @dev Revokes a role to accounts in batch.
+     * @dev Revokes a role from accounts in batch.
      *
      * Emits a {RoleRevoked} event for each account that has the provided role previously.
      *
@@ -735,7 +735,7 @@ abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, Pausabl
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The unchained internal initializer of the upgradable contract
+     * @dev The unchained internal initializer of the upgradeable contract
      *
      * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
@@ -797,7 +797,7 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The unchained internal initializer of the upgradable contract
+     * @dev The unchained internal initializer of the upgradeable contract
      *
      * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
@@ -859,7 +859,7 @@ abstract contract UUPSExtUpgradeable is UUPSUpgradeable {
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev Unchained internal initializer of the upgradable contract.
+     * @dev Unchained internal initializer of the upgradeable contract.
      *
      * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
@@ -1269,7 +1269,7 @@ contract AccessControlExtUpgradeableMock is AccessControlExtUpgradeable, UUPSUpg
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The initialize function of the upgradable contract.
+     * @dev The initialize function of the upgradeable contract.
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
@@ -1322,7 +1322,7 @@ contract PausableExtUpgradeableMock is PausableExtUpgradeable, UUPSUpgradeable {
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The initialize function of the upgradable contract.
+     * @dev The initialize function of the upgradeable contract.
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
@@ -1375,7 +1375,7 @@ contract RescuableUpgradeableMock is RescuableUpgradeable, UUPSUpgradeable {
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The initialize function of the upgradable contract.
+     * @dev The initialize function of the upgradeable contract.
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
@@ -1408,7 +1408,7 @@ contract RescuableUpgradeableMock is RescuableUpgradeable, UUPSUpgradeable {
 }
 ```
 
-#### File `contracts/mocks/base/UUPSExtUpgradableMock.sol`
+#### File `contracts/mocks/base/UUPSExtUpgradeableMock.sol`
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -1418,9 +1418,9 @@ pragma solidity ^0.8.20;
 import { UUPSExtUpgradeable } from "../../base/UUPSExtUpgradeable.sol";
 
 /**
- * @title UUPSExtUpgradableMock contract
+ * @title UUPSExtUpgradeableMock contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev An implementation of the {UUPSExtUpgradable} contract for test purposes.
+ * @dev An implementation of the {UUPSExtUpgradeable} contract for test purposes.
  */
 contract UUPSExtUpgradeableMock is UUPSExtUpgradeable {
     // ------------------ Events ---------------------------------- //
@@ -1431,7 +1431,7 @@ contract UUPSExtUpgradeableMock is UUPSExtUpgradeable {
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The initialize function of the upgradable contract.
+     * @dev The initialize function of the upgradeable contract.
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
@@ -1528,4 +1528,3 @@ contract BlueprintTestable is Blueprint {
     }
 }
 ```
-
