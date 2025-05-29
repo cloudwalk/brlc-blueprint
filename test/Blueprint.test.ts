@@ -321,6 +321,16 @@ describe("Contracts 'Blueprint'", async () => {
         anotherBlueprintContract.initialize(ADDRESS_ZERO)
       ).to.be.revertedWithCustomError(anotherBlueprintContract, ERROR_NAME_TOKEN_ADDRESS_IS_ZERO);
     });
+
+    it("Is reverted for the contract implementation if it is called even for the first time", async () => {
+      const tokenAddress = user.address;
+      const blueprintImplementation = await blueprintFactory.deploy() as Contract;
+      await blueprintImplementation.waitForDeployment();
+
+      await expect(
+        blueprintImplementation.initialize(tokenAddress)
+      ).to.be.revertedWithCustomError(blueprintImplementation, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
+    });
   });
 
   describe("Function 'upgradeToAndCall()'", async () => {
