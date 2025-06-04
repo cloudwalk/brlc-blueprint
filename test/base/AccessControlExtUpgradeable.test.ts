@@ -9,9 +9,9 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
   const EVENT_NAME_ROLE_GRANTED = "RoleGranted";
   const EVENT_NAME_ROLE_REVOKED = "RoleRevoked";
 
-  const REVERT_ERROR_CONTRACT_INITIALIZATION_IS_INVALID = "InvalidInitialization";
-  const REVERT_ERROR_CONTRACT_IS_NOT_INITIALIZING = "NotInitializing";
-  const REVERT_ERROR_UNAUTHORIZED_ACCOUNT = "AccessControlUnauthorizedAccount";
+  const ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID = "InvalidInitialization";
+  const ERROR_NAME_CONTRACT_IS_NOT_INITIALIZING = "NotInitializing";
+  const ERROR_NAME_UNAUTHORIZED_ACCOUNT = "AccessControlUnauthorizedAccount";
 
   const OWNER_ROLE: string = ethers.id("OWNER_ROLE");
   const GRANTOR_ROLE: string = ethers.id("GRANTOR_ROLE");
@@ -71,14 +71,14 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
       const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
       await expect(
         accessControlExtMock.initialize()
-      ).to.be.revertedWithCustomError(accessControlExtMock, REVERT_ERROR_CONTRACT_INITIALIZATION_IS_INVALID);
+      ).to.be.revertedWithCustomError(accessControlExtMock, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
     });
 
     it("The internal unchained initializer is reverted if it is called outside the init process", async () => {
       const { accessControlExtMock } = await setUpFixture(deployAccessControlExtMock);
       await expect(
         accessControlExtMock.callParentInitializerUnchained()
-      ).to.be.revertedWithCustomError(accessControlExtMock, REVERT_ERROR_CONTRACT_IS_NOT_INITIALIZING);
+      ).to.be.revertedWithCustomError(accessControlExtMock, ERROR_NAME_CONTRACT_IS_NOT_INITIALIZING);
     });
   });
 
@@ -141,7 +141,7 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
           connect(accessControlExtMock, attacker).grantRoleBatch(USER_ROLE, [])
         ).to.be.revertedWithCustomError(
           accessControlExtMock,
-          REVERT_ERROR_UNAUTHORIZED_ACCOUNT
+          ERROR_NAME_UNAUTHORIZED_ACCOUNT
         ).withArgs(attacker.address, GRANTOR_ROLE);
       });
     });
@@ -207,7 +207,7 @@ describe("Contract 'AccessControlExtUpgradeable'", async () => {
           connect(accessControlExtMock, attacker).revokeRoleBatch(USER_ROLE, [])
         ).to.be.revertedWithCustomError(
           accessControlExtMock,
-          REVERT_ERROR_UNAUTHORIZED_ACCOUNT
+          ERROR_NAME_UNAUTHORIZED_ACCOUNT
         ).withArgs(attacker.address, GRANTOR_ROLE);
       });
     });
