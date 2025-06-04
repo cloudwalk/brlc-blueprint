@@ -149,7 +149,7 @@ describe("Contracts 'Blueprint'", async () => {
     tokenMockFactory = tokenMockFactory.connect(deployer);
 
     // The token contract with the explicitly specified initial account
-    let tokenMock: Contract = await tokenMockFactory.deploy(name, symbol) as Contract;
+    let tokenMock = await tokenMockFactory.deploy(name, symbol) as Contract;
     await tokenMock.waitForDeployment();
     tokenMock = connect(tokenMock, deployer); // Explicitly specifying the initial account
 
@@ -158,7 +158,7 @@ describe("Contracts 'Blueprint'", async () => {
 
   async function deployContracts(): Promise<Fixture> {
     const tokenMock = await deployTokenMock();
-    let blueprint: Contract = await upgrades.deployProxy(blueprintFactory, [getAddress(tokenMock)]) as Contract;
+    let blueprint = await upgrades.deployProxy(blueprintFactory, [getAddress(tokenMock)]) as Contract;
     await blueprint.waitForDeployment();
     blueprint = connect(blueprint, deployer); // Explicitly specifying the initial account
 
@@ -311,7 +311,7 @@ describe("Contracts 'Blueprint'", async () => {
     });
 
     it("Is reverted if the passed token address is zero", async () => {
-      const anotherBlueprintContract: Contract = await upgrades.deployProxy(
+      const anotherBlueprintContract = await upgrades.deployProxy(
         blueprintFactory,
         [],
         { initializer: false }
