@@ -305,9 +305,8 @@ describe("Contracts 'Blueprint'", async () => {
 
     it("Is reverted if it is called a second time", async () => {
       const { blueprint, tokenMock } = await setUpFixture(deployContracts);
-      await expect(
-        blueprint.initialize(getAddress(tokenMock))
-      ).to.be.revertedWithCustomError(blueprint, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
+      await expect(blueprint.initialize(getAddress(tokenMock)))
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
     });
 
     it("Is reverted if the passed token address is zero", async () => {
@@ -317,9 +316,8 @@ describe("Contracts 'Blueprint'", async () => {
         { initializer: false }
       ) as Contract;
 
-      await expect(
-        anotherBlueprintContract.initialize(ADDRESS_ZERO)
-      ).to.be.revertedWithCustomError(anotherBlueprintContract, ERROR_NAME_TOKEN_ADDRESS_IS_ZERO);
+      await expect(anotherBlueprintContract.initialize(ADDRESS_ZERO))
+        .to.be.revertedWithCustomError(anotherBlueprintContract, ERROR_NAME_TOKEN_ADDRESS_IS_ZERO);
     });
 
     it("Is reverted for the contract implementation if it is called even for the first time", async () => {
@@ -327,9 +325,8 @@ describe("Contracts 'Blueprint'", async () => {
       const blueprintImplementation = await blueprintFactory.deploy() as Contract;
       await blueprintImplementation.waitForDeployment();
 
-      await expect(
-        blueprintImplementation.initialize(tokenAddress)
-      ).to.be.revertedWithCustomError(blueprintImplementation, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
+      await expect(blueprintImplementation.initialize(tokenAddress))
+        .to.be.revertedWithCustomError(blueprintImplementation, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
     });
   });
 
