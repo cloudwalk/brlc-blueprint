@@ -105,6 +105,7 @@ function main(): void {
   documentation += generateFileStructureDoc(structure);
   documentation += "\n\n";
   documentation += generateFileContentDoc(structure);
+  documentation = documentation.slice(0, -1); // Remove last `\n`.
 
   fs.writeFileSync(FILE_TO_UPDATE, documentation);
 }
