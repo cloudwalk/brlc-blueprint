@@ -32,10 +32,14 @@ const TOKEN_AMOUNTS: number[] = [
   TOKEN_AMOUNT * 5
 ];
 
+// Events of the contracts under test
+const EVENT_NAME_BALANCE_UPDATED = "BalanceUpdated";
+const EVENT_NAME_OPERATIONAL_TREASURY_CHANGED = "OperationalTreasuryChanged";
+
 // Errors of the lib contracts
-const ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID = "InvalidInitialization";
-const ERROR_NAME_CONTRACT_IS_PAUSED = "EnforcedPause";
-const ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED = "AccessControlUnauthorizedAccount";
+const ERROR_NAME_Access_Control_Unauthorized_Account = "AccessControlUnauthorizedAccount";
+const ERROR_NAME_Enforced_Pause = "EnforcedPause";
+const ERROR_NAME_Invalid_Initialization = "InvalidInitialization";
 
 // Errors of the contracts under test
 const ERROR_NAME_ACCOUNT_ADDRESS_ZERO = "Blueprint_AccountAddressZero";
@@ -45,13 +49,9 @@ const ERROR_NAME_IMPLEMENTATION_ADDRESS_INVALID = "Blueprint_ImplementationAddre
 const ERROR_NAME_OPERATION_ALREADY_EXECUTED = "Blueprint_OperationAlreadyExecuted";
 const ERROR_NAME_OPERATION_ID_ZERO = "Blueprint_OperationIdZero";
 const ERROR_NAME_OPERATIONAL_TREASURY_ADDRESS_ZERO = "Blueprint_OperationalTreasuryAddressZero";
-const ERROR_NAME_TOKEN_ADDRESS_IS_ZERO = "Blueprint_TokenAddressZero";
+const ERROR_NAME_TOKEN_ADDRESS_ZERO = "Blueprint_TokenAddressZero";
 const ERROR_NAME_TREASURY_ADDRESS_ALREADY_CONFIGURED = "Blueprint_TreasuryAddressAlreadyConfigured";
 const ERROR_NAME_TREASURY_ALLOWANCE_ZERO = "Blueprint_TreasuryAllowanceZero";
-
-// Events of the contracts under test
-const EVENT_NAME_BALANCE_UPDATED = "BalanceUpdated";
-const EVENT_NAME_OPERATIONAL_TREASURY_CHANGED = "OperationalTreasuryChanged";
 
 const EXPECTED_VERSION: Version = {
   major: 1,
@@ -306,7 +306,7 @@ describe("Contracts 'Blueprint'", async () => {
     it("Is reverted if it is called a second time", async () => {
       const { blueprint, tokenMock } = await setUpFixture(deployContracts);
       await expect(blueprint.initialize(getAddress(tokenMock)))
-        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Invalid_Initialization);
     });
 
     it("Is reverted if the passed token address is zero", async () => {
@@ -317,7 +317,7 @@ describe("Contracts 'Blueprint'", async () => {
       ) as Contract;
 
       await expect(anotherBlueprintContract.initialize(ADDRESS_ZERO))
-        .to.be.revertedWithCustomError(anotherBlueprintContract, ERROR_NAME_TOKEN_ADDRESS_IS_ZERO);
+        .to.be.revertedWithCustomError(anotherBlueprintContract, ERROR_NAME_TOKEN_ADDRESS_ZERO);
     });
 
     it("Is reverted for the contract implementation if it is called even for the first time", async () => {
@@ -326,7 +326,7 @@ describe("Contracts 'Blueprint'", async () => {
       await blueprintImplementation.waitForDeployment();
 
       await expect(blueprintImplementation.initialize(tokenAddress))
-        .to.be.revertedWithCustomError(blueprintImplementation, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
+        .to.be.revertedWithCustomError(blueprintImplementation, ERROR_NAME_Invalid_Initialization);
     });
   });
 
@@ -340,7 +340,7 @@ describe("Contracts 'Blueprint'", async () => {
       const { blueprint } = await setUpFixture(deployContracts);
 
       await expect(connect(blueprint, user).upgradeToAndCall(getAddress(blueprint), "0x"))
-        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
         .withArgs(user.address, OWNER_ROLE);
     });
 
@@ -348,7 +348,7 @@ describe("Contracts 'Blueprint'", async () => {
       const { blueprint } = await setUpFixture(deployContracts);
 
       await expect(connect(blueprint, user).upgradeToAndCall(getAddress(blueprint), "0x"))
-        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
         .withArgs(user.address, OWNER_ROLE);
     });
 
@@ -402,7 +402,7 @@ describe("Contracts 'Blueprint'", async () => {
       const { blueprint } = await setUpFixture(deployContracts);
 
       await expect(connect(blueprint, stranger).setOperationalTreasury(operationalTreasury.address))
-        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
         .withArgs(stranger.address, OWNER_ROLE);
     });
 
@@ -444,12 +444,12 @@ describe("Contracts 'Blueprint'", async () => {
         const [testOp] = createTestOperations();
 
         await expect(connect(blueprint, stranger).deposit(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
           .withArgs(stranger.address, MANAGER_ROLE);
 
         // Even if it is called by a deployer
         await expect(connect(blueprint, deployer).deposit(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
           .withArgs(deployer.address, MANAGER_ROLE);
       });
 
@@ -459,7 +459,7 @@ describe("Contracts 'Blueprint'", async () => {
         await pauseContract(blueprint);
 
         await expect(connect(blueprint, manager).deposit(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_CONTRACT_IS_PAUSED);
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Enforced_Pause);
       });
 
       it("The provided operation identifier is zero", async () => {
@@ -550,12 +550,12 @@ describe("Contracts 'Blueprint'", async () => {
         const [testOp] = createTestOperations();
 
         await expect(connect(blueprint, stranger).withdraw(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
           .withArgs(stranger.address, MANAGER_ROLE);
 
         // Even if it is called by a deployer
         await expect(connect(blueprint, deployer).withdraw(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
           .withArgs(deployer.address, MANAGER_ROLE);
       });
 
@@ -565,7 +565,7 @@ describe("Contracts 'Blueprint'", async () => {
         await pauseContract(blueprint);
 
         await expect(connect(blueprint, manager).withdraw(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_CONTRACT_IS_PAUSED);
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Enforced_Pause);
       });
 
       it("The provided operation identifier is zero", async () => {
