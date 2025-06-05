@@ -39,7 +39,7 @@ abstract contract BlueprintStorageLayout is IBlueprintTypes {
      * Notes:
      * 1. The operational treasury is used to deposit and withdraw tokens through special functions.
      *
-     * @custom:storage-location erc7201:cloudwalk.storage.AssetYield
+     * @custom:storage-location erc7201:cloudwalk.storage.Blueprint
      */
     struct BlueprintStorage {
         // Slot 1
@@ -61,7 +61,7 @@ abstract contract BlueprintStorageLayout is IBlueprintTypes {
 
     // ------------------ Internal functions ---------------------- //
 
-    /// @dev Returns the storage slot location for the `BlueprintdStorage` struct.
+    /// @dev Returns the storage slot location for the `BlueprintStorage` struct.
     function _getBlueprintStorage() internal pure returns (BlueprintStorage storage $) {
         assembly {
             $.slot := BLUEPRINT_STORAGE_LOCATION
