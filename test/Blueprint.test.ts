@@ -363,8 +363,8 @@ describe("Contracts 'Blueprint'", async () => {
   describe("Function '$__VERSION()'", async () => {
     it("Returns expected values", async () => {
       const { blueprint } = await setUpFixture(deployAndConfigureContracts);
-      const tokenVersion = await blueprint.$__VERSION();
-      checkEquality(tokenVersion, EXPECTED_VERSION);
+      const blueprintVersion = await blueprint.$__VERSION();
+      checkEquality(blueprintVersion, EXPECTED_VERSION);
     });
   });
 
@@ -480,7 +480,7 @@ describe("Contracts 'Blueprint'", async () => {
           .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCOUNT_ADDRESS_ZERO);
       });
 
-      it("The provided account is greater than 64-bit unsigned integer", async () => {
+      it("The provided amount is greater than 64-bit unsigned integer", async () => {
         const { blueprint, tokenMock } = await setUpFixture(deployAndConfigureContracts);
         const [testOp] = createTestOperations();
         testOp.amount = maxUintForBits(64) + 1n;
@@ -586,7 +586,7 @@ describe("Contracts 'Blueprint'", async () => {
           .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCOUNT_ADDRESS_ZERO);
       });
 
-      it("The provided account is greater than 64-bit unsigned integer", async () => {
+      it("The provided amount is greater than 64-bit unsigned integer", async () => {
         const { blueprint, tokenMock } = await setUpFixture(deployAndConfigureContracts);
         const [testOp] = createTestOperations();
         testOp.amount = maxUintForBits(64) + 1n;

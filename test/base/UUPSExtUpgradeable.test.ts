@@ -7,7 +7,7 @@ import { setUpFixture } from "../../test-utils/common";
 
 const ADDRESS_ZERO = ethers.ZeroAddress;
 
-describe("Contracts 'UUPSExtUpgradeable'", async () => {
+describe("Contract 'UUPSExtUpgradeable'", async () => {
   // Events of the contracts under test
   const EVENT_NAME_MOCK_VALIDATE_UPGRADE_CALL = "MockValidateUpgradeCall";
 
