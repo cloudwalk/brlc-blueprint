@@ -6,11 +6,11 @@ import { connect, proveTx } from "../../test-utils/eth";
 import { setUpFixture } from "../../test-utils/common";
 
 describe("Contract 'AccessControlExtUpgradeable'", async () => {
-  // Events of the lib contracts
+  // Events of the library contracts
   const EVENT_NAME_ROLE_GRANTED = "RoleGranted";
   const EVENT_NAME_ROLE_REVOKED = "RoleRevoked";
 
-  // Errors of the lib contracts
+  // Errors of the library contracts
   const ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED_ACCOUNT = "AccessControlUnauthorizedAccount";
   const ERROR_NAME_INVALID_INITIALIZATION = "InvalidInitialization";
   const ERROR_NAME_NOT_INITIALIZING = "NotInitializing";

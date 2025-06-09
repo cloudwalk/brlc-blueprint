@@ -36,7 +36,7 @@ const TOKEN_AMOUNTS: number[] = [
 const EVENT_NAME_BALANCE_UPDATED = "BalanceUpdated";
 const EVENT_NAME_OPERATIONAL_TREASURY_CHANGED = "OperationalTreasuryChanged";
 
-// Errors of the lib contracts
+// Errors of the library contracts
 const ERROR_NAME_Access_Control_Unauthorized_Account = "AccessControlUnauthorizedAccount";
 const ERROR_NAME_Enforced_Pause = "EnforcedPause";
 const ERROR_NAME_Invalid_Initialization = "InvalidInitialization";
