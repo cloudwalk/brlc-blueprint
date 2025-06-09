@@ -14,8 +14,8 @@ contract ERC20TokenMock is ERC20 {
 
     /**
      * @dev The constructor of the contract.
-     * @param name_ The name of the token to set for this ERC20-comparable contract.
-     * @param symbol_ The symbol of the token to set for this ERC20-comparable contract.
+     * @param name_ The name of the token to set for this ERC20-compatible contract.
+     * @param symbol_ The symbol of the token to set for this ERC20-compatible contract.
      */
     constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {}
 

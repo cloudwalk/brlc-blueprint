@@ -6,7 +6,7 @@ import { IBlueprintTypes } from "./IBlueprintTypes.sol";
 
 /**
  * @title IBlueprintPrimary interface
- * @author CloudWalk Inc. (See https://cloudwalk.io)
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The primary part of the blueprint smart contract interface.
  *
  * See details about the contract in the comments of the {IBlueprint} interface.
@@ -34,7 +34,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
     // ------------------ Transactional functions ----------------- //
 
     /**
-     * @dev Deposits tokens to the smart-contract.
+     * @dev Deposits tokens to the smart contract.
      *
      * During the function call the specified amount of tokens will be transferred from the caller to
      * the configured treasury of the contract and the balance of the provided account will be increased accordingly.
@@ -54,7 +54,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
     ) external;
 
     /**
-     * @dev Withdraws tokens from the smart-contract.
+     * @dev Withdraws tokens from the smart contract.
      *
      * During the function call the specified amount of tokens will be transferred back from
      * the configured treasury of the contract to the provided account and
@@ -77,7 +77,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
     // ------------------ View and pure functions ----------------- //
 
     /**
-     * @dev Returns the data of a single operation on the smart-contract.
+     * @dev Returns the data of a single operation on the smart contract.
      * @param opId The off-chain identifier of the operation.
      * @return operation The data of the operation.
      */
@@ -106,7 +106,7 @@ interface IBlueprintPrimary is IBlueprintTypes {
 
 /**
  * @title IBlueprintConfiguration interface
- * @author CloudWalk Inc. (See https://cloudwalk.io)
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The configuration part of the blueprint smart contract interface.
  */
 interface IBlueprintConfiguration {
@@ -137,13 +137,13 @@ interface IBlueprintConfiguration {
 
     // ------------------ View functions -------------------------- //
 
-    /// @dev Returns the address of the operational treasury of this smart-contract.
+    /// @dev Returns the address of the operational treasury of this smart contract.
     function operationalTreasury() external view returns (address);
 }
 
 /**
  * @title IBlueprintErrors interface
- * @author CloudWalk Inc. (See https://cloudwalk.io)
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev Defines the custom errors used in the blueprint contract.
  *
  * The errors are ordered alphabetically.
@@ -189,7 +189,7 @@ interface IBlueprintErrors {
 
 /**
  * @title IBlueprint interface
- * @author CloudWalk Inc. (See https://cloudwalk.io)
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The full interface of the blueprint smart contract.
  *
  * The smart contract is designed as a reference and template one.
@@ -197,7 +197,7 @@ interface IBlueprintErrors {
  * The contract itself does not store tokens on its account.
  * It uses an external storage called the operational treasury that can be configured by the owner of the contract.
  * The contract can be paused, in that case only configuration and non-transactional functions can be called.
- * Depositing, withdrawal, and similar functions are reverted if the contract is paused.
+ * Deposit, withdrawal, and similar functions are reverted if the contract is paused.
  *
  * Some logic and entities of this contract are just for demonstration purposes and do not have any real use.
  */

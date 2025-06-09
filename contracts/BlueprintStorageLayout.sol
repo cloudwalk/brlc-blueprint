@@ -5,8 +5,8 @@ pragma solidity ^0.8.18;
 import { IBlueprintTypes } from "./interfaces/IBlueprintTypes.sol";
 
 /**
- * @title BlueprintStorage contract
- * @author CloudWalk Inc. (See https://cloudwalk.io)
+ * @title BlueprintStorageLayout contract
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev Defines the storage layout for the reference smart-contract.
  *
  * See details about the contract in the comments of the {IBlueprint} interface.

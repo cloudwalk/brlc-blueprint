@@ -20,7 +20,7 @@ import { BlueprintStorageLayout } from "./BlueprintStorageLayout.sol";
  * @title Blueprint contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
  * @dev The smart contract is designed as a reference and template one.
- * It executes deposit and withdrawal operations using the underlying token smart contract and store related data.
+ * It executes deposit and withdrawal operations using the underlying token smart contract and stores related data.
  *
  * See details about the contract in the comments of the {IBlueprint} interface.
  */
@@ -46,7 +46,7 @@ contract Blueprint is
     /**
      * @dev Constructor that prohibits the initialization of the implementation of the upgradeable contract.
      *
-     * See details
+     * See details:
      * https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable#initializing_the_implementation_contract
      *
      * @custom:oz-upgrades-unsafe-allow constructor
@@ -87,7 +87,7 @@ contract Blueprint is
      *
      * @dev Requirements:
      *
-     * - The caller must have the {MANAGER_ROLE} role.
+     * - The caller must have the {OWNER_ROLE} role.
      * - The new operational treasury address must not be zero.
      * - The new operational treasury address must not be the same as already configured.
      */
@@ -255,7 +255,7 @@ contract Blueprint is
     }
 
     /**
-     * @dev Fetches the current data of an operation and check it.
+     * @dev Fetches the current data of an operation and checks it.
      * @param opId The off-chain identifier of the operation.
      * @return The current operation.
      */

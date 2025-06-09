@@ -11,7 +11,7 @@ pragma solidity ^0.8.0;
  */
 interface IBlueprintTypes {
     /**
-     * @dev Possible statuses of a an operation used in the blueprint smart contract.
+     * @dev Possible statuses of an operation used in the blueprint smart contract.
      *
      * The values:
      *
