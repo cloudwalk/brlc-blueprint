@@ -10,6 +10,7 @@ const ALLOWANCE_MAX = ethers.MaxUint256;
 const BALANCE_INITIAL = 1000_000_000_000n;
 
 const OWNER_ROLE: string = ethers.id("OWNER_ROLE");
+const GRANTOR_ROLE: string = ethers.id("GRANTOR_ROLE");
 const PAUSER_ROLE: string = ethers.id("PAUSER_ROLE");
 const RESCUER_ROLE: string = ethers.id("RESCUER_ROLE");
 const MANAGER_ROLE: string = ethers.id("MANAGER_ROLE");
@@ -31,10 +32,14 @@ const TOKEN_AMOUNTS: number[] = [
   TOKEN_AMOUNT * 5
 ];
 
-// Errors of the lib contracts
-const ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID = "InvalidInitialization";
-const ERROR_NAME_CONTRACT_IS_PAUSED = "EnforcedPause";
-const ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED = "AccessControlUnauthorizedAccount";
+// Events of the contracts under test
+const EVENT_NAME_BALANCE_UPDATED = "BalanceUpdated";
+const EVENT_NAME_OPERATIONAL_TREASURY_CHANGED = "OperationalTreasuryChanged";
+
+// Errors of the library contracts
+const ERROR_NAME_Access_Control_Unauthorized_Account = "AccessControlUnauthorizedAccount";
+const ERROR_NAME_Enforced_Pause = "EnforcedPause";
+const ERROR_NAME_Invalid_Initialization = "InvalidInitialization";
 
 // Errors of the contracts under test
 const ERROR_NAME_ACCOUNT_ADDRESS_ZERO = "Blueprint_AccountAddressZero";
@@ -44,17 +49,13 @@ const ERROR_NAME_IMPLEMENTATION_ADDRESS_INVALID = "Blueprint_ImplementationAddre
 const ERROR_NAME_OPERATION_ALREADY_EXECUTED = "Blueprint_OperationAlreadyExecuted";
 const ERROR_NAME_OPERATION_ID_ZERO = "Blueprint_OperationIdZero";
 const ERROR_NAME_OPERATIONAL_TREASURY_ADDRESS_ZERO = "Blueprint_OperationalTreasuryAddressZero";
-const ERROR_NAME_TOKEN_ADDRESS_IS_ZERO = "Blueprint_TokenAddressZero";
+const ERROR_NAME_TOKEN_ADDRESS_ZERO = "Blueprint_TokenAddressZero";
 const ERROR_NAME_TREASURY_ADDRESS_ALREADY_CONFIGURED = "Blueprint_TreasuryAddressAlreadyConfigured";
 const ERROR_NAME_TREASURY_ALLOWANCE_ZERO = "Blueprint_TreasuryAllowanceZero";
 
-// Events of the contracts under test
-const EVENT_NAME_BALANCE_UPDATED = "BalanceUpdated";
-const EVENT_NAME_OPERATIONAL_TREASURY_CHANGED = "OperationalTreasuryChanged";
-
 const EXPECTED_VERSION: Version = {
   major: 1,
-  minor: 0,
+  minor: 1,
   patch: 0
 };
 
@@ -148,7 +149,7 @@ describe("Contracts 'Blueprint'", async () => {
     tokenMockFactory = tokenMockFactory.connect(deployer);
 
     // The token contract with the explicitly specified initial account
-    let tokenMock: Contract = await tokenMockFactory.deploy(name, symbol) as Contract;
+    let tokenMock = await tokenMockFactory.deploy(name, symbol) as Contract;
     await tokenMock.waitForDeployment();
     tokenMock = connect(tokenMock, deployer); // Explicitly specifying the initial account
 
@@ -157,7 +158,7 @@ describe("Contracts 'Blueprint'", async () => {
 
   async function deployContracts(): Promise<Fixture> {
     const tokenMock = await deployTokenMock();
-    let blueprint: Contract = await upgrades.deployProxy(blueprintFactory, [getAddress(tokenMock)]) as Contract;
+    let blueprint = await upgrades.deployProxy(blueprintFactory, [getAddress(tokenMock)]) as Contract;
     await blueprint.waitForDeployment();
     blueprint = connect(blueprint, deployer); // Explicitly specifying the initial account
 
@@ -171,6 +172,7 @@ describe("Contracts 'Blueprint'", async () => {
     const fixture = await deployContracts();
     const { blueprint, tokenMock } = fixture;
 
+    await proveTx(blueprint.grantRole(GRANTOR_ROLE, deployer.address));
     await proveTx(blueprint.grantRole(MANAGER_ROLE, manager.address));
     await proveTx(connect(tokenMock, operationalTreasury).approve(getAddress(blueprint), ALLOWANCE_MAX));
     await proveTx(blueprint.setOperationalTreasury(operationalTreasury.address));
@@ -219,6 +221,7 @@ describe("Contracts 'Blueprint'", async () => {
   }
 
   async function pauseContract(contract: Contract) {
+    await proveTx(contract.grantRole(GRANTOR_ROLE, deployer.address));
     await proveTx(contract.grantRole(PAUSER_ROLE, deployer.address));
     await proveTx(contract.pause());
   }
@@ -272,18 +275,21 @@ describe("Contracts 'Blueprint'", async () => {
 
       // Role hashes
       expect(await blueprint.OWNER_ROLE()).to.equal(OWNER_ROLE);
+      expect(await blueprint.GRANTOR_ROLE()).to.equal(GRANTOR_ROLE);
       expect(await blueprint.PAUSER_ROLE()).to.equal(PAUSER_ROLE);
       expect(await blueprint.RESCUER_ROLE()).to.equal(RESCUER_ROLE);
       expect(await blueprint.MANAGER_ROLE()).to.equal(MANAGER_ROLE);
 
       // The role admins
       expect(await blueprint.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE);
-      expect(await blueprint.getRoleAdmin(PAUSER_ROLE)).to.equal(OWNER_ROLE);
-      expect(await blueprint.getRoleAdmin(RESCUER_ROLE)).to.equal(OWNER_ROLE);
-      expect(await blueprint.getRoleAdmin(MANAGER_ROLE)).to.equal(OWNER_ROLE);
+      expect(await blueprint.getRoleAdmin(GRANTOR_ROLE)).to.equal(OWNER_ROLE);
+      expect(await blueprint.getRoleAdmin(PAUSER_ROLE)).to.equal(GRANTOR_ROLE);
+      expect(await blueprint.getRoleAdmin(RESCUER_ROLE)).to.equal(GRANTOR_ROLE);
+      expect(await blueprint.getRoleAdmin(MANAGER_ROLE)).to.equal(GRANTOR_ROLE);
 
       // The deployer should have the owner role, but not the other roles
       expect(await blueprint.hasRole(OWNER_ROLE, deployer.address)).to.equal(true);
+      expect(await blueprint.hasRole(GRANTOR_ROLE, deployer.address)).to.equal(false);
       expect(await blueprint.hasRole(PAUSER_ROLE, deployer.address)).to.equal(false);
       expect(await blueprint.hasRole(RESCUER_ROLE, deployer.address)).to.equal(false);
       expect(await blueprint.hasRole(MANAGER_ROLE, deployer.address)).to.equal(false);
@@ -299,21 +305,28 @@ describe("Contracts 'Blueprint'", async () => {
 
     it("Is reverted if it is called a second time", async () => {
       const { blueprint, tokenMock } = await setUpFixture(deployContracts);
-      await expect(
-        blueprint.initialize(getAddress(tokenMock))
-      ).to.be.revertedWithCustomError(blueprint, ERROR_NAME_CONTRACT_INITIALIZATION_IS_INVALID);
+      await expect(blueprint.initialize(getAddress(tokenMock)))
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Invalid_Initialization);
     });
 
     it("Is reverted if the passed token address is zero", async () => {
-      const anotherBlueprintContract: Contract = await upgrades.deployProxy(
+      const anotherBlueprintContract = await upgrades.deployProxy(
         blueprintFactory,
         [],
         { initializer: false }
       ) as Contract;
 
-      await expect(
-        anotherBlueprintContract.initialize(ADDRESS_ZERO)
-      ).to.be.revertedWithCustomError(blueprintFactory, ERROR_NAME_TOKEN_ADDRESS_IS_ZERO);
+      await expect(anotherBlueprintContract.initialize(ADDRESS_ZERO))
+        .to.be.revertedWithCustomError(anotherBlueprintContract, ERROR_NAME_TOKEN_ADDRESS_ZERO);
+    });
+
+    it("Is reverted for the contract implementation if it is called even for the first time", async () => {
+      const tokenAddress = user.address;
+      const blueprintImplementation = await blueprintFactory.deploy() as Contract;
+      await blueprintImplementation.waitForDeployment();
+
+      await expect(blueprintImplementation.initialize(tokenAddress))
+        .to.be.revertedWithCustomError(blueprintImplementation, ERROR_NAME_Invalid_Initialization);
     });
   });
 
@@ -327,7 +340,7 @@ describe("Contracts 'Blueprint'", async () => {
       const { blueprint } = await setUpFixture(deployContracts);
 
       await expect(connect(blueprint, user).upgradeToAndCall(getAddress(blueprint), "0x"))
-        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
         .withArgs(user.address, OWNER_ROLE);
     });
 
@@ -335,7 +348,7 @@ describe("Contracts 'Blueprint'", async () => {
       const { blueprint } = await setUpFixture(deployContracts);
 
       await expect(connect(blueprint, user).upgradeToAndCall(getAddress(blueprint), "0x"))
-        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
         .withArgs(user.address, OWNER_ROLE);
     });
 
@@ -350,8 +363,8 @@ describe("Contracts 'Blueprint'", async () => {
   describe("Function '$__VERSION()'", async () => {
     it("Returns expected values", async () => {
       const { blueprint } = await setUpFixture(deployAndConfigureContracts);
-      const tokenVersion = await blueprint.$__VERSION();
-      checkEquality(tokenVersion, EXPECTED_VERSION);
+      const blueprintVersion = await blueprint.$__VERSION();
+      checkEquality(blueprintVersion, EXPECTED_VERSION);
     });
   });
 
@@ -389,7 +402,7 @@ describe("Contracts 'Blueprint'", async () => {
       const { blueprint } = await setUpFixture(deployContracts);
 
       await expect(connect(blueprint, stranger).setOperationalTreasury(operationalTreasury.address))
-        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+        .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
         .withArgs(stranger.address, OWNER_ROLE);
     });
 
@@ -431,12 +444,12 @@ describe("Contracts 'Blueprint'", async () => {
         const [testOp] = createTestOperations();
 
         await expect(connect(blueprint, stranger).deposit(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
           .withArgs(stranger.address, MANAGER_ROLE);
 
         // Even if it is called by a deployer
         await expect(connect(blueprint, deployer).deposit(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
           .withArgs(deployer.address, MANAGER_ROLE);
       });
 
@@ -446,7 +459,7 @@ describe("Contracts 'Blueprint'", async () => {
         await pauseContract(blueprint);
 
         await expect(connect(blueprint, manager).deposit(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_CONTRACT_IS_PAUSED);
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Enforced_Pause);
       });
 
       it("The provided operation identifier is zero", async () => {
@@ -467,7 +480,7 @@ describe("Contracts 'Blueprint'", async () => {
           .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCOUNT_ADDRESS_ZERO);
       });
 
-      it("The provided account is greater than 64-bit unsigned integer", async () => {
+      it("The provided amount is greater than 64-bit unsigned integer", async () => {
         const { blueprint, tokenMock } = await setUpFixture(deployAndConfigureContracts);
         const [testOp] = createTestOperations();
         testOp.amount = maxUintForBits(64) + 1n;
@@ -537,12 +550,12 @@ describe("Contracts 'Blueprint'", async () => {
         const [testOp] = createTestOperations();
 
         await expect(connect(blueprint, stranger).withdraw(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
           .withArgs(stranger.address, MANAGER_ROLE);
 
         // Even if it is called by a deployer
         await expect(connect(blueprint, deployer).withdraw(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCESS_CONTROL_UNAUTHORIZED)
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Access_Control_Unauthorized_Account)
           .withArgs(deployer.address, MANAGER_ROLE);
       });
 
@@ -552,7 +565,7 @@ describe("Contracts 'Blueprint'", async () => {
         await pauseContract(blueprint);
 
         await expect(connect(blueprint, manager).withdraw(testOp.account, testOp.amount, testOp.opId))
-          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_CONTRACT_IS_PAUSED);
+          .to.be.revertedWithCustomError(blueprint, ERROR_NAME_Enforced_Pause);
       });
 
       it("The provided operation identifier is zero", async () => {
@@ -573,7 +586,7 @@ describe("Contracts 'Blueprint'", async () => {
           .to.be.revertedWithCustomError(blueprint, ERROR_NAME_ACCOUNT_ADDRESS_ZERO);
       });
 
-      it("The provided account is greater than 64-bit unsigned integer", async () => {
+      it("The provided amount is greater than 64-bit unsigned integer", async () => {
         const { blueprint, tokenMock } = await setUpFixture(deployAndConfigureContracts);
         const [testOp] = createTestOperations();
         testOp.amount = maxUintForBits(64) + 1n;

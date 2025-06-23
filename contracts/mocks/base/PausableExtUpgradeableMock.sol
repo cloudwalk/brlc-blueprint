@@ -12,42 +12,34 @@ import { PausableExtUpgradeable } from "../../base/PausableExtUpgradeable.sol";
  * @dev An implementation of the {PausableExtUpgradeable} contract for test purposes.
  */
 contract PausableExtUpgradeableMock is PausableExtUpgradeable, UUPSUpgradeable {
-    /// @dev The role of this contract owner.
-    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev The initialize function of the upgradable contract.
+     * @dev The initialize function of the upgradeable contract.
      *
      * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
      */
     function initialize() public initializer {
-        __AccessControlExt_init(); // This is needed only to avoid errors during coverage assessment
-        __PausableExt_init(OWNER_ROLE);
+        __AccessControlExt_init_unchained();
+        __PausableExt_init_unchained();
 
         _grantRole(OWNER_ROLE, _msgSender());
 
-        // Only to provide the 100 % test coverage
+        // Only to provide 100% test coverage
         _authorizeUpgrade(address(0));
     }
 
     // ------------------ Transactional functions ----------------- //
 
-    /// @dev Calls the parent internal initializing function to verify the 'onlyInitializing' modifier.
-    function callParentInitializer() external {
-        __PausableExt_init(OWNER_ROLE);
-    }
-
-    /// @dev Calls the parent internal unchained initializing function to verify the 'onlyInitializing' modifier.
+    /// @dev Calls the parent internal unchained initialization function to verify the 'onlyInitializing' modifier.
     function callParentInitializerUnchained() external {
-        __PausableExt_init_unchained(OWNER_ROLE);
+        __PausableExt_init_unchained();
     }
 
     // ------------------ Internal functions ---------------------- //
 
     /**
-     * @dev The implementation of the upgrade authorization function of the parent UUPSProxy contract.
+     * @dev The implementation of the upgrade authorization function of the parent UUPSUpgradeable contract.
      * @param newImplementation The address of the new implementation.
      */
     function _authorizeUpgrade(address newImplementation) internal pure override {

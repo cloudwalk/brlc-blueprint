@@ -7,25 +7,31 @@ import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/ac
 /**
  * @title AccessControlExtUpgradeable base contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Extends the OpenZeppelin's {AccessControlUpgradeable} contract by adding the functions
- *      for granting and revoking roles in batch.
+ * @dev Extends the OpenZeppelin's {AccessControlUpgradeable} contract by introducing new roles and
+ *      adding functions for granting and revoking roles in batch.
  */
 abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
+    // ------------------ Constants ------------------------------- //
+
+    /// @dev The role of this contract owner.
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+
+    /// @dev The role of a grantor that is allowed to grant and revoke other roles, except itself and the owner role.
+    bytes32 public constant GRANTOR_ROLE = keccak256("GRANTOR_ROLE");
+
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev Internal initializer of the upgradable contract.
+     * @dev The unchained internal initializer of the upgradeable contract
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
-     */
-    function __AccessControlExt_init() internal onlyInitializing {}
-
-    /**
-     * @dev Unchained internal initializer of the upgradable contract.
+     * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     * Note: The `..._init()` initializer has not been provided as redundant.
      */
-    function __AccessControlExt_init_unchained() internal onlyInitializing {}
+    function __AccessControlExt_init_unchained() internal onlyInitializing {
+        _setRoleAdmin(OWNER_ROLE, OWNER_ROLE);
+        _setRoleAdmin(GRANTOR_ROLE, OWNER_ROLE);
+    }
 
     // ------------------ Transactional functions ----------------- //
 
@@ -40,13 +46,17 @@ abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
      * @param accounts The accounts to grant the role to.
      */
     function grantRoleBatch(bytes32 role, address[] memory accounts) public virtual onlyRole(getRoleAdmin(role)) {
-        for (uint256 i = 0; i < accounts.length; i++) {
+        uint256 count = accounts.length;
+        for (uint256 i = 0; i < count; ) {
             _grantRole(role, accounts[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 
     /**
-     * @dev Revokes a role to accounts in batch.
+     * @dev Revokes a role from accounts in batch.
      *
      * Emits a {RoleRevoked} event for each account that has the provided role previously.
      *
@@ -56,8 +66,12 @@ abstract contract AccessControlExtUpgradeable is AccessControlUpgradeable {
      * @param accounts The accounts to revoke the role from.
      */
     function revokeRoleBatch(bytes32 role, address[] memory accounts) public virtual onlyRole(getRoleAdmin(role)) {
-        for (uint256 i = 0; i < accounts.length; i++) {
+        uint256 count = accounts.length;
+        for (uint256 i = 0; i < count; ) {
             _revokeRole(role, accounts[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 }

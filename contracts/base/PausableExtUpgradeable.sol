@@ -13,32 +13,22 @@ import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
  *      the external pausing and unpausing functions.
  */
 abstract contract PausableExtUpgradeable is AccessControlExtUpgradeable, PausableUpgradeable {
-    /// @dev The role of pauser that is allowed to trigger the paused or unpaused state of the contract.
+    // ------------------ Constants ------------------------------- //
+
+    /// @dev The role of a pauser that is allowed to trigger the paused or unpaused state of the contract.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev Internal initializer of the upgradable contract.
+     * @dev The unchained internal initializer of the upgradeable contract
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
-     * @param pauserRoleAdmin The admin for the {PAUSER_ROLE} role.
+     * Note: The `..._init()` initializer has not been provided as redundant.
      */
-    function __PausableExt_init(bytes32 pauserRoleAdmin) internal onlyInitializing {
-        __Pausable_init_unchained();
-        __PausableExt_init_unchained(pauserRoleAdmin);
-    }
-
-    /**
-     * @dev Unchained internal initializer of the upgradable contract.
-     *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
-     *
-     * @param pauserRoleAdmin The admin for the {PAUSER_ROLE} role.
-     */
-    function __PausableExt_init_unchained(bytes32 pauserRoleAdmin) internal onlyInitializing {
-        _setRoleAdmin(PAUSER_ROLE, pauserRoleAdmin);
+    function __PausableExt_init_unchained() internal onlyInitializing {
+        _setRoleAdmin(PAUSER_ROLE, GRANTOR_ROLE);
     }
 
     // ------------------ Transactional functions ----------------- //

@@ -10,42 +10,35 @@ import { AccessControlExtUpgradeable } from "./AccessControlExtUpgradeable.sol";
 /**
  * @title RescuableUpgradeable base contract
  * @author CloudWalk Inc. (See https://www.cloudwalk.io)
- * @dev Allows to rescue ERC20 tokens locked up in the contract using the {RESCUER_ROLE} role.
+ * @dev Allows rescuing ERC20 tokens locked in the contract using the {RESCUER_ROLE} role.
  */
 abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
+    // ------------------ Types ----------------------------------- //
+
     using SafeERC20 for IERC20;
 
-    /// @dev The role of rescuer that is allowed to rescue tokens locked up in the contract.
+    // ------------------ Constants ------------------------------- //
+
+    /// @dev The role of a rescuer that is allowed to rescue tokens locked in the contract.
     bytes32 public constant RESCUER_ROLE = keccak256("RESCUER_ROLE");
 
     // ------------------ Initializers ---------------------------- //
 
     /**
-     * @dev Internal initializer of the upgradable contract.
+     * @dev The unchained internal initializer of the upgradeable contract
      *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
+     * See details: https://docs.openzeppelin.com/contracts/5.x/upgradeable#multiple-inheritance
      *
-     * @param rescuerRoleAdmin The admin for the {RESCUER_ROLE} role.
+     * Note: The `..._init()` initializer has not been provided as redundant.
      */
-    function __Rescuable_init(bytes32 rescuerRoleAdmin) internal onlyInitializing {
-        __Rescuable_init_unchained(rescuerRoleAdmin);
-    }
-
-    /**
-     * @dev Unchained internal initializer of the upgradable contract.
-     *
-     * See details: https://docs.openzeppelin.com/upgrades-plugins/writing-upgradeable
-     *
-     * @param rescuerRoleAdmin The admin for the {RESCUER_ROLE} role.
-     */
-    function __Rescuable_init_unchained(bytes32 rescuerRoleAdmin) internal onlyInitializing {
-        _setRoleAdmin(RESCUER_ROLE, rescuerRoleAdmin);
+    function __Rescuable_init_unchained() internal onlyInitializing {
+        _setRoleAdmin(RESCUER_ROLE, GRANTOR_ROLE);
     }
 
     // ------------------ Transactional functions ----------------- //
 
     /**
-     * @dev Rescues tokens that accidentally were transferred to this contract.
+     * @dev Rescues tokens that were accidentally transferred to this contract.
      *
      * Does not emit special events except ones related to the token transfer.
      *
@@ -56,7 +49,7 @@ abstract contract RescuableUpgradeable is AccessControlExtUpgradeable {
      *
      * @param token The address of the token smart contract to rescue its coins from this smart contract's account.
      * @param account The account to transfer the rescued tokens to.
-     * @param amount The amount the tokens to rescue.
+     * @param amount The amount of tokens to rescue.
      */
     function rescueERC20(
         address token, // Tools: this comment prevents Prettier from formatting into a single line
