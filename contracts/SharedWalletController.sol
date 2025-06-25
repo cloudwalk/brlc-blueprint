@@ -8,11 +8,11 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/IERC20Hook.sol";
 
 /**
- * @title ISharedWallet interface
- * @author CloudWalk Inc.
- * @notice Interface for the SharedWallet contract that integrates with BRLC token hooks
+ * @title ISharedWalletController interface
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
+ * @dev The interface for the contract to manage shared wallets and integrate them with an ERC20 token through hooks.
  */
-interface ISharedWallet is IERC20Hook {
+interface ISharedWalletController is IERC20Hook {
     enum SharedWalletStatus {
         Nonexistent,
         Active,
@@ -103,13 +103,11 @@ interface ISharedWallet is IERC20Hook {
 }
 
 /**
- * @title SharedWalletVault
- * @author CloudWalk Inc.
- * @notice A secure vault contract that manages shared wallets and integrates with ERC20 token hooks
+ * @title SharedWalletController contract
+ * @author CloudWalk Inc. (See https://www.cloudwalk.io)
+ * @dev Manages shared wallets and integrates them with an ERC20 token through hooks.
  */
-
-// TODO: We need a better name here, because `vault` is associated with another share ownership mechanism.
-contract SharedWalletVault is ISharedWallet, AccessControl {
+contract SharedWalletController is ISharedWalletController, AccessControl {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
