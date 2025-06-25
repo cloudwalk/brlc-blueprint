@@ -23,7 +23,8 @@ interface ISharedWallet is IERC20Hook {
         Unknown,
         Deposit,
         Withdrawal,
-        Transfer
+        TransferTo,
+        TransferFrom
     }
 
     enum ParticipantOperationKind { // TODO: Check value names
@@ -32,20 +33,9 @@ interface ISharedWallet is IERC20Hook {
         Removal
     }
 
-    struct Participant {
-        address participant;
-        uint64 balance;
-        uint32 reserve1;
-        uint256 reserve2;
-        uint256 reserve3;
-        uint256 reserve4;
-        uint256 reserve5;
-        uint256 reserve6;
-        uint256 reserve7;
-    }
-
-    struct ParticipantInfo {
-        uint256 balance; // TODO: uint64
+    enum TransferKind {
+        Receiving,
+        Spending
     }
 
     // Structs
@@ -55,13 +45,12 @@ interface ISharedWallet is IERC20Hook {
         uint256 totalBalance; // TODO: 1. Use `uint64`. 2. Rename, options: `balance`, `sharedBalance`.
         // TODO: 1. Can be merged with the participantInfo into a single struct. 2. Consider `EnumerableSet.AddressSet`.
         address[] participants; // TODO: consider 0 participant as the initiator and its special conditions
-        mapping(address => ParticipantInfo) participantInfo;
-        Participant[] _participants;
+        uint256[] participantBalances;
     }
 
     // Events
-    event WalletCreated(address indexed wallet, address[] participants);
-    event WalletDeactivated(address indexed wallet); // TODO:
+    event WalletCreated(address indexed wallet);
+    event WalletDeactivated(address indexed wallet);
 
     event WalletParticipantOperation(
         address indexed wallet,
@@ -80,23 +69,24 @@ interface ISharedWallet is IERC20Hook {
     );
 
     // Custom errors
-    error SharedWallet_ZeroAddress();
-    error SharedWallet_EmptyParticipants();
-    error SharedWallet_WalletAlreadyExists();
-    error SharedWallet_WalletNotExists(); // TODO: rename, options: "WalletNonExistent", "WalletAbsence".
+    error SharedWallet_AddressZero();
     error SharedWallet_ParticipantAlreadyExists();
+    error SharedWallet_ParticipantArrayEmpty();
     error SharedWallet_ParticipantHasBalance(); // TODO: add the participant address parameter
     error SharedWallet_ParticipantInsufficientBalance(); // TODO: add paremeters
+    error SharedWallet_ParticipantNonExistent(); // TODO: add parameters
+    error SharedWallet_TokenUnauthorized();
+    error SharedWallet_WalletAlreadyExists();
+    error SharedWallet_WalletDeactivated(); // TODO: add paremeters
     error SharedWallet_WalletInsufficientBalance(); // TODO: add paremeters
-    error SharedWallet_UnauthorizedToken();
-    error SharedWallet_InvalidShareCalculation();
+    error SharedWallet_WalletNotActive(); // TODO: rename, options: "WalletNonExistent", "WalletAbsence".
 
     // Admin functions
     function createWallet(address wallet, address[] calldata participants) external;
 
-    function addParticipant(address wallet, address participant) external;
+    function addParticipants(address wallet, address[] calldata participants) external;
 
-    function removeParticipant(address wallet, address participant) external;
+    function removeParticipants(address wallet, address[] calldata participants) external;
 
     // View functions
     function getWalletInfo(
@@ -125,6 +115,7 @@ contract SharedWalletVault is ISharedWallet, AccessControl {
 
     // Constants
     bytes32 private constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    uint256 private constant NON_EXISTENT_PARTICIPANT_INDEX = type(uint256).max;
 
     // State variables
     IERC20 private immutable _token;
@@ -134,7 +125,7 @@ contract SharedWalletVault is ISharedWallet, AccessControl {
     mapping(address => address[]) private _participantWallets2;
 
     constructor(address token_) {
-        if (token_ == address(0)) revert SharedWallet_ZeroAddress();
+        if (token_ == address(0)) revert SharedWallet_AddressZero();
         _token = IERC20(token_);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender); // TODO: Use OWNER_ROLE
         _grantRole(ADMIN_ROLE, msg.sender); // TODO: Redundant
@@ -145,31 +136,39 @@ contract SharedWalletVault is ISharedWallet, AccessControl {
         address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
-        if (wallet == address(0)) revert SharedWallet_ZeroAddress();
-        if (participants.length == 0) revert SharedWallet_EmptyParticipants();
+        if (wallet == address(0)) revert SharedWallet_AddressZero();
+        if (participants.length == 0) revert SharedWallet_ParticipantArrayEmpty();
         if (_wallets[wallet].status != SharedWalletStatus.Nonexistent) revert SharedWallet_WalletAlreadyExists();
 
         SharedWallet storage sharedWallet = _wallets[wallet];
         sharedWallet.status = SharedWalletStatus.Active;
+        emit WalletCreated(wallet);
 
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
-            if (participant == address(0)) revert SharedWallet_ZeroAddress();
-
-            sharedWallet.participants.push(participant);
-            sharedWallet.participantInfo[participant].balance = 0;
-            _participantWallets[participant].add(wallet);
+            _addParticipantToWallet(wallet, participant);
         }
-
-        emit WalletCreated(wallet, participants);
     }
 
-    function addParticipant(address wallet, address participant) external onlyRole(ADMIN_ROLE) {
-        if (_wallets[wallet].status != SharedWalletStatus.Active) revert SharedWallet_WalletNotExists();
-        if (participant == address(0)) revert SharedWallet_ZeroAddress();
-        if (_wallets[wallet].participantInfo[participant].balance > 0) revert SharedWallet_ParticipantAlreadyExists();
+    function addParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
+        if (_wallets[wallet].status != SharedWalletStatus.Active) revert SharedWallet_WalletNotActive();
+        for (uint256 i = 0; i < participants.length; i++) {
+            address participant = participants[i];
+            _addParticipantToWallet(wallet, participant);
+        }
+    }
 
-        _wallets[wallet].participants.push(participant);
+    function _addParticipantToWallet(
+        address wallet,
+        address participant
+    ) internal {
+        if (participant == address(0)) revert SharedWallet_AddressZero();
+        SharedWallet storage sharedWallet = _wallets[wallet];
+        uint256 participantIndex = _getParticipantIndex(sharedWallet, participant);
+        if (participantIndex != NON_EXISTENT_PARTICIPANT_INDEX) revert SharedWallet_ParticipantAlreadyExists();
+
+        sharedWallet.participants.push(participant);
+        sharedWallet.participantBalances.push();
         _participantWallets[participant].add(wallet);
 
         emit WalletParticipantOperation(
@@ -179,30 +178,42 @@ contract SharedWalletVault is ISharedWallet, AccessControl {
         );
     }
 
-    function removeParticipant(address wallet, address participant) external onlyRole(ADMIN_ROLE) {
+    function removeParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
+        if (_wallets[wallet].status != SharedWalletStatus.Active) revert SharedWallet_WalletNotActive();
+        for (uint256 i = 0; i < participants.length; i++) {
+            address participant = participants[i];
+            _removeParticipantFromWallet(wallet, participant);
+        }
+    }
+
+    function _removeParticipantFromWallet(address wallet, address participant) internal {
         SharedWallet storage sharedWallet = _wallets[wallet];
-        if (sharedWallet.status == SharedWalletStatus.Nonexistent) revert SharedWallet_WalletNotExists();
-        if (sharedWallet.participantInfo[participant].balance > 0) revert SharedWallet_ParticipantHasBalance();
+        uint256 participantIndex = _getParticipantIndex(sharedWallet, participant);
+        if (participantIndex == NON_EXISTENT_PARTICIPANT_INDEX) revert SharedWallet_ParticipantNonExistent();
+        if (sharedWallet.participantBalances[participantIndex] > 0) revert SharedWallet_ParticipantHasBalance();
 
         // TODO: add logic to prohibit removing of the wallet initiator (sharedWallet.participants[0])
         // TODO: move the following logic to an internal function to share with the future `removeWallet()` function.
 
-        // Remove from participants array
-        uint256 length = sharedWallet.participants.length;
-        for (uint256 i = 0; i < length; i++) {
-            if (sharedWallet.participants[i] == participant) {
-                sharedWallet.participants[i] = sharedWallet.participants[length - 1];
-                sharedWallet.participants.pop();
-                break;
-            }
+        // Remove from arrays
+        {
+            uint256 lastIndex = sharedWallet.participants.length - 1;
+            sharedWallet.participants[participantIndex] = sharedWallet.participants[lastIndex];
+            delete sharedWallet.participants[lastIndex];
+            sharedWallet.participants.pop();
+            sharedWallet.participantBalances[participantIndex] = sharedWallet.participantBalances[lastIndex];
+            delete sharedWallet.participantBalances[lastIndex];
+            sharedWallet.participantBalances.pop();
         }
 
         _participantWallets[participant].remove(wallet);
+
         emit WalletParticipantOperation(
             wallet,
             participant,
             ParticipantOperationKind.Removal
         );
+        
     }
 
     // Hook implementation
@@ -211,198 +222,190 @@ contract SharedWalletVault is ISharedWallet, AccessControl {
     }
 
     function afterTokenTransfer(address from, address to, uint256 amount) external {
-        if (msg.sender != address(_token)) revert SharedWallet_UnauthorizedToken();
+        if (msg.sender != address(_token)) revert SharedWallet_TokenUnauthorized();
         if (amount == 0) return;
 
-        if (_wallets[to].status != SharedWalletStatus.Nonexistent) {
-            // Handle transfer to wallet
-            _handleTransferToWallet(from, to, amount);
-        }
-        else if (_wallets[from].status != SharedWalletStatus.Nonexistent) {
+        SharedWalletStatus status = _wallets[from].status;
+        if (status == SharedWalletStatus.Active) {
             // Handle transfer from wallet
             _handleTransferFromWallet(from, to, amount);
+        } else if (status == SharedWalletStatus.Deactivated) {
+            revert SharedWallet_WalletDeactivated();
+        }
+
+        status = _wallets[to].status;
+        if (status == SharedWalletStatus.Active) {
+            // Handle transfer to wallet
+            _handleTransferToWallet(from, to, amount);
+        } else if (status == SharedWalletStatus.Deactivated) {
+            revert SharedWallet_WalletDeactivated();
+        }
+    }
+
+    function _handleTransferFromWallet(address wallet, address to, uint256 amount) internal {
+        SharedWallet storage sharedWallet = _wallets[wallet];
+        uint256 participantIndex = _getParticipantIndex(sharedWallet, to);
+
+        if (participantIndex != NON_EXISTENT_PARTICIPANT_INDEX) {
+            // If recipient is a participant and has sufficient balance, deduct from their balance
+            _processFunding(wallet, participantIndex, amount, uint256(TransferKind.Spending));
+        }
+        else {
+            // Otherwise, deduct proportionally from all participants
+            _processTransfer(wallet, amount, uint256(TransferKind.Spending));
         }
     }
 
     // Internal functions
     function _handleTransferToWallet(address from, address wallet, uint256 amount) internal {
         SharedWallet storage sharedWallet = _wallets[wallet];
+        uint256 participantIndex = _getParticipantIndex(sharedWallet, from);
 
-        if (isWalletParticipant(wallet, from)) {
+        if (participantIndex != NON_EXISTENT_PARTICIPANT_INDEX) {
             // If sender is a participant, update only their balance
-
-            ParticipantInfo storage participantInfo = sharedWallet.participantInfo[from];
-            uint256 oldParticipantBalance = participantInfo.balance;
-            uint256 newParticipantBalance = oldParticipantBalance += amount;
-            uint256 oldWalletBalance = sharedWallet.totalBalance;
-            uint256 newWalletBalance = oldParticipantBalance += amount;
-            participantInfo.balance = newParticipantBalance;
-            sharedWallet.totalBalance = newWalletBalance;
-            emit WalletBalanceOperation(
-                wallet,
-                from, //participant,
-                BalanceOperationKind.Deposit,
-                newParticipantBalance,
-                oldParticipantBalance,
-                newWalletBalance,
-                oldWalletBalance
-            );
+            _processFunding(wallet, participantIndex, amount, uint256(TransferKind.Receiving));
         }
         else {
             // If sender is not a participant, distribute proportionally
-            _receiveProportionally(wallet, amount);
+            _processTransfer(wallet, amount, uint256(TransferKind.Receiving));
         }
     }
 
-    function _handleTransferFromWallet(address wallet, address to, uint256 amount) internal {
-        SharedWallet storage sharedWallet = _wallets[wallet];
-        if (sharedWallet.totalBalance < amount) {
-            revert SharedWallet_WalletInsufficientBalance();
+    function _getParticipantIndex(
+        SharedWallet storage sharedWallet,
+        address participant
+    ) internal view returns (uint256) {
+        uint256 i = sharedWallet.participants.length;   
+        do {
+            --i;
+            if (sharedWallet.participants[i] == participant) return i;
         }
+        while (i != 0);
+        return NON_EXISTENT_PARTICIPANT_INDEX;
+    }
 
-        if (isWalletParticipant(wallet, to)) {
-            // If recipient is a participant and has sufficient balance, deduct from their balance
-
-            ParticipantInfo storage participantInfo = sharedWallet.participantInfo[to];
-            uint256 oldParticipantBalance = participantInfo.balance;
+    function _processFunding(
+        address wallet,
+        uint256 participantIndex,
+        uint256 amount,
+        uint256 transferKind
+    ) internal {
+        SharedWallet storage sharedWallet = _wallets[wallet];
+        uint256 oldWalletBalance = sharedWallet.totalBalance;
+        uint256 newWalletBalance;
+        uint256 oldParticipantBalance = sharedWallet.participantBalances[participantIndex];
+        uint256 newParticipantBalance;
+        if (transferKind == uint256(TransferKind.Receiving)) {
+            newParticipantBalance = oldParticipantBalance + amount;
+            newWalletBalance = oldWalletBalance + amount;
+        } else {
+            if (oldWalletBalance < amount) {
+                revert SharedWallet_WalletInsufficientBalance();
+            }
             if (oldParticipantBalance < amount) {
                 revert SharedWallet_ParticipantInsufficientBalance();
             }
-            uint256 newParticipantBalance = oldParticipantBalance - amount;
-            uint256 oldWalletBalance = sharedWallet.totalBalance;
-            uint256 newWalletBalance = oldParticipantBalance - amount;
-
-            participantInfo.balance = newParticipantBalance;
-            sharedWallet.totalBalance = newWalletBalance;
-
-            emit WalletBalanceOperation(
-                wallet,
-                to, //participant,
-                BalanceOperationKind.Deposit,
-                newParticipantBalance,
-                oldParticipantBalance,
-                newWalletBalance,
-                oldWalletBalance
-            );
+            newParticipantBalance = oldParticipantBalance - amount;
+            newWalletBalance = oldWalletBalance - amount;
         }
-        else {
-            // Otherwise, deduct proportionally from all participants
-            _spendProportionally(wallet, amount);
-        }
+
+        sharedWallet.participantBalances[participantIndex] = newParticipantBalance;
+        sharedWallet.totalBalance = newWalletBalance;
+
+        emit WalletBalanceOperation(
+            wallet,
+        sharedWallet.participants[participantIndex],
+            transferKind == uint256(TransferKind.Receiving)
+                ? BalanceOperationKind.Deposit
+                : BalanceOperationKind.Withdrawal,
+            newParticipantBalance,
+            oldParticipantBalance,
+            newWalletBalance,
+            oldWalletBalance
+        );
     }
 
-    function _receiveProportionally(address wallet, uint256 amount) internal {
+    function _processTransfer(address wallet, uint256 amount, uint256 transferKind) internal {
         SharedWallet storage sharedWallet = _wallets[wallet];
-        uint256 totalBalance = sharedWallet.totalBalance;
-        address[] memory participants = sharedWallet.participants; // TODO: replace memory => storage
-        uint256[] memory shares;
-        uint256 participantCount = participants.length;
-
-        if (totalBalance == 0) {
-            // If wallet is empty, distribute equally
-
-            uint256[] memory participantBalances = _createParticipantBalances(participantCount, 1); // new uint256[](participants.length);
-            shares = _determineShares(amount, participantCount, participantBalances);
-        }
-        else {
-            // Otherwise distribute proportionally to existing balances
-
-            uint256[] memory participantBalances = _getParticipantBalances(sharedWallet);
-            shares = _determineShares(amount, totalBalance, participantBalances);
-        }
-        {
-            uint256 oldWalletBalance = sharedWallet.totalBalance;
-            uint256 newWalletBalance = oldWalletBalance += amount;
-            for (uint256 i = 0; i < participantCount; ++i) {
-                uint256 share = shares[i];
-                if (share > 0) {
-                    address participant = participants[i];
-                    uint256 oldParticipantBalance = sharedWallet.participantInfo[participants[i]].balance;
-                    uint256 newParticipantBalance = oldWalletBalance + share;
-                    emit WalletBalanceOperation(
-                        wallet,
-                        participant,
-                        BalanceOperationKind.Transfer,
-                        newParticipantBalance,
-                        oldParticipantBalance,
-                        newWalletBalance,
-                        oldWalletBalance
-                    );
-                }
+        uint256 oldWalletBalance = sharedWallet.totalBalance;
+        uint256 newWalletBalance;
+        if (transferKind == uint256(TransferKind.Receiving)) {
+            newWalletBalance = oldWalletBalance + amount;
+        } else {
+            if (oldWalletBalance < amount) {
+                revert SharedWallet_WalletInsufficientBalance();
             }
+            newWalletBalance = oldWalletBalance - amount;
         }
-    }
-
-    function _spendProportionally(address wallet, uint256 amount) internal {
-        SharedWallet storage sharedWallet = _wallets[wallet];
-        uint256 totalBalance = sharedWallet.totalBalance;
+        uint256[] memory shares = _determineShares(amount, sharedWallet);
         uint256 participantCount = sharedWallet.participants.length;
-        uint256[] memory participantBalances = _getParticipantBalances(sharedWallet);
-        uint256[] memory shares = _determineShares(amount, totalBalance, participantBalances);
-        {
-            uint256 oldWalletBalance = sharedWallet.totalBalance;
-            uint256 newWalletBalance = oldWalletBalance -= amount;
-            for (uint256 i = 0; i < participantCount; ++i) {
-                uint256 share = shares[i];
-                if (share > 0) {
-                    address participant = sharedWallet.participants[i];
-                    uint256 oldParticipantBalance = sharedWallet.participantInfo[participant].balance;
-                    uint256 newParticipantBalance = oldWalletBalance - share;
-                    emit WalletBalanceOperation(
-                        wallet,
-                        participant,
-                        BalanceOperationKind.Transfer,
-                        newParticipantBalance,
-                        oldParticipantBalance,
-                        newWalletBalance,
-                        oldWalletBalance
-                    );
-                }
+
+        sharedWallet.totalBalance = newWalletBalance;
+
+        for (uint256 i = 0; i < participantCount; ++i) {
+            uint256 share = shares[i];
+            if (share > 0) {
+                address participant = sharedWallet.participants[i];
+                uint256 oldParticipantBalance = sharedWallet.participantBalances[i];
+                uint256 newParticipantBalance = (transferKind == uint256(TransferKind.Receiving))
+                    ? oldWalletBalance + share
+                    : oldWalletBalance - share;
+                emit WalletBalanceOperation(
+                    wallet,
+                    participant,
+                    transferKind == uint256(TransferKind.Receiving) 
+                        ? BalanceOperationKind.TransferTo
+                        : BalanceOperationKind.TransferFrom,
+                    newParticipantBalance,
+                    oldParticipantBalance,
+                    newWalletBalance,
+                    oldWalletBalance
+                );
             }
-        }
-    }
-
-    
-    function _getParticipantBalances(SharedWallet storage sharedWallet) internal view returns (uint256[] memory participantBalances) {
-        address[] memory participants = sharedWallet.participants;
-        uint256 participantCount = participants.length;
-        participantBalances = new uint256[](participantCount);
-        
-        for (uint256 i = 0; i < participantCount; i++) {
-            participantBalances[i] = sharedWallet.participantInfo[participants[i]].balance;
-        }
-    }
-
-    function _createParticipantBalances(
-        uint256 participantCount,
-        uint256 balance
-    ) internal pure returns (uint256[] memory participantBalances) {
-        participantBalances = new uint256[](participantCount);
-        for (uint256 i = 0; i < participantCount; i++) {
-            participantBalances[i] = balance;
         }
     }
 
     function _determineShares(
         uint256 amount,
-        uint256 totalBalance,
-        uint256[] memory participantBalances
-    ) internal pure returns (uint256[] memory shares) {
-        shares = new uint256[](participantBalances.length);
+        SharedWallet storage sharedWallet
+    ) internal view returns (uint256[] memory) {
+        uint256 i = sharedWallet.participants.length;
+        uint256[] memory shares = new uint256[](i);
+        uint256 totalBalance = sharedWallet.totalBalance;
         uint256 totalShares = 0;
-        uint256 lastIndex;
-        uint256 i = participantBalances.length;
-        do {
-            --i;
-            uint256 participantBalance = participantBalances[i];
-            if (participantBalance > 0) {
-                uint256 share = amount * participantBalance / totalBalance;
-                totalShares += share;
-                shares[i] = share;
-                lastIndex = i;
+        uint256 lastNonZeroBalanceIndex = 0;
+        if (totalBalance != 0) {
+            do {
+                --i;
+                uint256 participantBalance = sharedWallet.participantBalances[i];
+                if (participantBalance > 0) {
+                    uint256 share = _calculateShare(amount, participantBalance, totalBalance);
+                    totalShares += share;
+                    shares[i] = share;
+                    lastNonZeroBalanceIndex = i;
+                }
             }
-        } while(i != 0);
-        shares[lastIndex] += amount - totalShares;
+            while (i != 0);
+        } else {
+            uint256 share = _calculateShare(amount, 1, i);
+            totalShares = share * i;
+            do {
+                --i;
+                shares[i] = share;
+            }
+            while (i != 0);
+        }
+
+        shares[lastNonZeroBalanceIndex] += amount - totalShares;
+        return shares;
+    }
+
+    function _calculateShare(
+        uint256 amount,
+        uint256 balance,
+        uint256 totalBalance
+    ) internal pure returns (uint256) {
+        return amount * balance / totalBalance; // TODO: Round to cents
     }
 
     // View functions
@@ -411,15 +414,17 @@ contract SharedWalletVault is ISharedWallet, AccessControl {
     ) external view returns (address[] memory participants, uint256[] memory balances) {
         SharedWallet storage sharedWallet = _wallets[wallet];
         participants = sharedWallet.participants;
-        balances = new uint256[](participants.length);
-
-        for (uint256 i = 0; i < participants.length; i++) {
-            balances[i] = sharedWallet.participantInfo[participants[i]].balance;
-        }
+        balances = sharedWallet.participantBalances;
     }
 
     function getParticipantBalance(address wallet, address participant) external view returns (uint256) {
-        return _wallets[wallet].participantInfo[participant].balance;
+        SharedWallet storage sharedWallet = _wallets[wallet];
+        uint256 participantIndex = _getParticipantIndex(sharedWallet, participant);
+        if (participantIndex != NON_EXISTENT_PARTICIPANT_INDEX) {
+            return sharedWallet.participantBalances[participantIndex];
+        } else {
+            return 0;
+        }
     }
 
     function getParticipantWallets( //TODO: rename, options: `getWalletsOfParticipant()`, getWalletsForParticipant()
@@ -430,7 +435,7 @@ contract SharedWalletVault is ISharedWallet, AccessControl {
 
     // TODO: rename, options: `isParticipant()`
     function isWalletParticipant(address wallet, address participant) public view returns (bool) {
-        if (_wallets[wallet].status == SharedWalletStatus.Active) return false;
+        if (_wallets[wallet].status != SharedWalletStatus.Active) return false;
         return _participantWallets[participant].contains(wallet);
     }
 }
