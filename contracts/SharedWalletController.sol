@@ -79,10 +79,13 @@ interface ISharedWalletController is IERC20Hook {
     error SharedWallet_WalletAlreadyExists();
     error SharedWallet_WalletDeactivated(); // TODO: add paremeters
     error SharedWallet_WalletInsufficientBalance(); // TODO: add paremeters
-    error SharedWallet_WalletNotActive(); // TODO: rename, options: "WalletNonExistent", "WalletAbsence".
+    error SharedWallet_WalletNotActive();
+    error SharedWallet_WalletNonexistent();
 
     // Admin functions
     function createWallet(address wallet, address[] calldata participants) external;
+
+    function deactivateWallet(address wallet) external;
 
     function addParticipants(address wallet, address[] calldata participants) external;
 
@@ -148,8 +151,14 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
         }
     }
 
-    function addParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
+    function deactivateWallet(address wallet) external onlyRole(ADMIN_ROLE) {
         if (_wallets[wallet].status != SharedWalletStatus.Active) revert SharedWallet_WalletNotActive();
+        _wallets[wallet].status = SharedWalletStatus.Deactivated;
+        emit WalletDeactivated(wallet);
+    }
+
+    function addParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
+        if (_wallets[wallet].status == SharedWalletStatus.Nonexistent) revert SharedWallet_WalletNonexistent();
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
             _addParticipantToWallet(wallet, participant);
@@ -177,7 +186,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     }
 
     function removeParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
-        if (_wallets[wallet].status != SharedWalletStatus.Active) revert SharedWallet_WalletNotActive();
+        if (_wallets[wallet].status == SharedWalletStatus.Nonexistent) revert SharedWallet_WalletNonexistent();
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
             _removeParticipantFromWallet(wallet, participant);
