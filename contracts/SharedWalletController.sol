@@ -357,6 +357,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
                 uint256 newParticipantBalance = (transferKind == uint256(TransferKind.Receiving))
                     ? oldWalletBalance + share
                     : oldWalletBalance - share;
+                sharedWallet.participantBalances[i] = newParticipantBalance;
                 emit WalletBalanceOperation(
                     wallet,
                     participant,
