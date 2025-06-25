@@ -23,11 +23,11 @@ interface ISharedWalletController is IERC20Hook {
         Unknown,
         Deposit,
         Withdrawal,
-        TransferTo,
-        TransferFrom
+        TransferIn,
+        TransferOut
     }
 
-    enum ParticipantOperationKind { // TODO: Check value names
+    enum ParticipantOperationKind {
         Unknown,
         Addition,
         Removal
@@ -352,8 +352,8 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
                     wallet,
                     participant,
                     transferKind == uint256(TransferKind.Receiving) 
-                        ? BalanceOperationKind.TransferTo
-                        : BalanceOperationKind.TransferFrom,
+                        ? BalanceOperationKind.TransferIn
+                        : BalanceOperationKind.TransferOut,
                     newParticipantBalance,
                     oldParticipantBalance,
                     newWalletBalance,
