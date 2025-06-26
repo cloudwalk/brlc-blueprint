@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import { AccessControlExtUpgradeable } from "./base/AccessControlExtUpgradeable.sol";
 import { PausableExtUpgradeable } from "./base/PausableExtUpgradeable.sol";
@@ -32,6 +33,7 @@ contract SharedWalletController is
     // ------------------ Types ----------------------------------- //
 
     using EnumerableSet for EnumerableSet.AddressSet;
+    using SafeCast for uint256;
 
     /**
      * @dev Possible types of transfers in a shared wallet for internal use.
@@ -484,8 +486,8 @@ contract SharedWalletController is
             newWalletBalance = oldWalletBalance - amount;
         }
 
-        state.balance = newParticipantBalance;
-        sharedWallet.totalBalance = newWalletBalance;
+        state.balance = newParticipantBalance.toUint64();
+        sharedWallet.totalBalance = newWalletBalance.toUint64();
 
         emit WalletBalanceOperation(
             wallet,
@@ -521,7 +523,7 @@ contract SharedWalletController is
         uint256[] memory shares = _determineShares(amount, sharedWallet);
         uint256 participantCount = sharedWallet.participants.length;
 
-        sharedWallet.totalBalance = newWalletBalance;
+        sharedWallet.totalBalance = newWalletBalance.toUint64();
 
         for (uint256 i = 0; i < participantCount; ++i) {
             if (shares[i] > 0) {
@@ -531,7 +533,7 @@ contract SharedWalletController is
                 uint256 newParticipantBalance = (transferKind == uint256(TransferKind.Receiving))
                     ? oldWalletBalance + shares[i]
                     : oldWalletBalance - shares[i];
-                state.balance = newParticipantBalance;
+                state.balance = newParticipantBalance.toUint64();
 
                 emit WalletBalanceOperation(
                     wallet,

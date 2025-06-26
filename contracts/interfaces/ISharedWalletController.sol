@@ -89,7 +89,7 @@ interface ISharedWalletControllerTypes {
         // TODO: Add storage slot comments
         ParticipantStatus status;
         uint16 index;
-        uint256 balance;
+        uint64 balance;
     }
 
     /**
@@ -104,10 +104,10 @@ interface ISharedWalletControllerTypes {
      */
     struct SharedWallet {
         // TODO: Add storage slot comments
-        SharedWalletStatus status;
-        uint256 totalBalance; // TODO: 1. Use `uint64`. 2. Rename, options: `balance`, `sharedBalance`.
         address[] participants;
         mapping(address participant => ParticipantState) participantStates;
+        uint64 totalBalance; // TODO: 1. Use `uint64`. 2. Rename, options: `balance`, `sharedBalance`.
+        SharedWalletStatus status;
     }
 
     /**
