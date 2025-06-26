@@ -71,7 +71,7 @@ contract SharedWalletController is
      */
     function initialize(address token_) external initializer {
         if (token_ == address(0)) {
-            revert SharedWallet_WalletAddressZero();
+            revert SharedWalletController_WalletAddressZero();
         }
 
         __AccessControlExt_init_unchained();
@@ -100,11 +100,11 @@ contract SharedWalletController is
         address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
-        if (wallet == address(0)) revert SharedWallet_WalletAddressZero();
-        if (participants.length == 0) revert SharedWallet_ParticipantArrayEmpty();
+        if (wallet == address(0)) revert SharedWalletController_WalletAddressZero();
+        if (participants.length == 0) revert SharedWalletController_ParticipantArrayEmpty();
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
         if (sharedWallet.status != SharedWalletStatus.Nonexistent) {
-            revert SharedWallet_WalletExistentAlready();
+            revert SharedWalletController_WalletExistentAlready();
         }
 
         sharedWallet.status = SharedWalletStatus.Active;
@@ -128,9 +128,9 @@ contract SharedWalletController is
     function deactivateWallet(address wallet) external onlyRole(ADMIN_ROLE) {
         SharedWallet storage sharedWallet = _getExistentWallet(wallet);
         if (sharedWallet.status != SharedWalletStatus.Active) {
-            revert SharedWallet_WalletStatusIncompatible(sharedWallet.status, SharedWalletStatus.Active);
+            revert SharedWalletController_WalletStatusIncompatible(sharedWallet.status, SharedWalletStatus.Active);
         }
-        if (sharedWallet.totalBalance > 0) revert SharedWallet_WalletBalanceNonzero();
+        if (sharedWallet.totalBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
         _getSharedWalletControllerStorage().wallets[wallet].status = SharedWalletStatus.Deactivated;
         emit WalletStatusChanged(wallet, SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
     }
@@ -146,7 +146,7 @@ contract SharedWalletController is
     function activateWallet(address wallet) external onlyRole(ADMIN_ROLE) {
         SharedWallet storage sharedWallet = _getExistentWallet(wallet);
         if (sharedWallet.status != SharedWalletStatus.Deactivated) {
-            revert SharedWallet_WalletStatusIncompatible(
+            revert SharedWalletController_WalletStatusIncompatible(
                 sharedWallet.status,
                 SharedWalletStatus.Deactivated
             );
@@ -165,7 +165,7 @@ contract SharedWalletController is
      */
     function removeWallet(address wallet) external onlyRole(OWNER_ROLE) {
         SharedWallet storage sharedWallet = _getExistentWallet(wallet);
-        if (sharedWallet.totalBalance > 0) revert SharedWallet_WalletBalanceNonzero();
+        if (sharedWallet.totalBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
         for (uint256 i = 0; i < sharedWallet.participants.length; i++) {
             _removeParticipantFromWallet(wallet, sharedWallet.participants[i]);
         }
@@ -238,21 +238,21 @@ contract SharedWalletController is
      * - The caller must be the token contract.
      */
     function afterTokenTransfer(address from, address to, uint256 amount) external {
-        if (msg.sender != address(_getSharedWalletControllerStorage().token)) revert SharedWallet_TokenUnauthorized();
+        if (msg.sender != address(_getSharedWalletControllerStorage().token)) revert SharedWalletController_TokenUnauthorized();
         if (amount == 0) return;
 
         SharedWalletStatus status = _getSharedWalletControllerStorage().wallets[from].status;
         if (status == SharedWalletStatus.Active) {
             _handleTransferFromWallet(from, to, amount);
         } else if (status == SharedWalletStatus.Deactivated) {
-            revert SharedWallet_WalletStatusIncompatible(SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
+            revert SharedWalletController_WalletStatusIncompatible(SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
         }
 
         status = _getSharedWalletControllerStorage().wallets[to].status;
         if (status == SharedWalletStatus.Active) {
             _handleTransferToWallet(from, to, amount);
         } else if (status == SharedWalletStatus.Deactivated) {
-            revert SharedWallet_WalletStatusIncompatible(SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
+            revert SharedWalletController_WalletStatusIncompatible(SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
         }
     }
 
@@ -332,10 +332,10 @@ contract SharedWalletController is
         address wallet,
         address participant
     ) internal {
-        if (participant == address(0)) revert SharedWallet_ParticipantAddressZero();
+        if (participant == address(0)) revert SharedWalletController_ParticipantAddressZero();
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
         if (sharedWallet.participantStates[participant].status != ParticipantStatus.Nonexistent) {
-            revert SharedWallet_ParticipantExistentAlready();
+            revert SharedWalletController_ParticipantExistentAlready();
         }
 
         // TODO: Prohibit use another shared wallet as a participant.
@@ -368,10 +368,10 @@ contract SharedWalletController is
     ) internal {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
         if (sharedWallet.participantStates[participant].status == ParticipantStatus.Nonexistent) {
-            revert SharedWallet_ParticipantNonexistent();
+            revert SharedWalletController_ParticipantNonexistent();
         }
         if (sharedWallet.participantStates[participant].balance > 0) {
-            revert SharedWallet_ParticipantBalanceNonzero(participant);
+            revert SharedWalletController_ParticipantBalanceNonzero(participant);
         }
 
         // TODO: add logic to prohibit removing of the wallet initiator
@@ -405,7 +405,7 @@ contract SharedWalletController is
      */
     function _getExistentWallet(address wallet) internal view returns (SharedWallet storage) {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
-        if (sharedWallet.status == SharedWalletStatus.Nonexistent) revert SharedWallet_WalletNonexistent();
+        if (sharedWallet.status == SharedWalletStatus.Nonexistent) revert SharedWalletController_WalletNonexistent();
         return sharedWallet;
     }
 
@@ -461,10 +461,10 @@ contract SharedWalletController is
             newWalletBalance = oldWalletBalance + amount;
         } else {
             if (oldWalletBalance < amount) {
-                revert SharedWallet_WalletBalanceInsufficient();
+                revert SharedWalletController_WalletBalanceInsufficient();
             }
             if (oldParticipantBalance < amount) {
-                revert SharedWallet_ParticipantBalanceInsufficient();
+                revert SharedWalletController_ParticipantBalanceInsufficient();
             }
             newParticipantBalance = oldParticipantBalance - amount;
             newWalletBalance = oldWalletBalance - amount;
@@ -500,7 +500,7 @@ contract SharedWalletController is
             newWalletBalance = oldWalletBalance + amount;
         } else {
             if (oldWalletBalance < amount) {
-                revert SharedWallet_WalletBalanceInsufficient();
+                revert SharedWalletController_WalletBalanceInsufficient();
             }
             newWalletBalance = oldWalletBalance - amount;
         }
@@ -606,7 +606,7 @@ contract SharedWalletController is
             WalletParticipantPair calldata pair = participantWalletPairs[i];
 
             if (pair.wallet == address(0) && pair.participant == address(0)) {
-                revert SharedWallet_ParticipantAddressZero();
+                revert SharedWalletController_ParticipantAddressZero();
             }
 
             if (pair.wallet == address(0)) {
@@ -655,7 +655,7 @@ contract SharedWalletController is
      */
     function _validateUpgrade(address newImplementation) internal view override onlyRole(OWNER_ROLE) {
         try ISharedWalletController(newImplementation).proveSharedWalletController() {} catch {
-            revert SharedWallet_ImplementationAddressInvalid();
+            revert SharedWalletController_ImplementationAddressInvalid();
         }
     }
 }

@@ -304,46 +304,46 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
 interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     // ------------------ Errors ---------------------------------- //
     /// @dev Thrown if the provided implementation address is invalid.
-    error SharedWallet_ImplementationAddressInvalid();
+    error SharedWalletController_ImplementationAddressInvalid();
 
     /// @dev Thrown if the provided participant address is zero.
-    error SharedWallet_ParticipantAddressZero();
+    error SharedWalletController_ParticipantAddressZero();
 
     /// @dev Thrown if the provided participant array is empty.
-    error SharedWallet_ParticipantArrayEmpty();
+    error SharedWalletController_ParticipantArrayEmpty();
 
     /// @dev Thrown if the current participant balance is insufficient for the operation.
-    error SharedWallet_ParticipantBalanceInsufficient(); // TODO: add paremeters
+    error SharedWalletController_ParticipantBalanceInsufficient(); // TODO: add paremeters
 
     /// @dev Thrown if the current participant balance is nonzero.
-    error SharedWallet_ParticipantBalanceNonzero(address participant); // TODO: add the participant address parameter
+    error SharedWalletController_ParticipantBalanceNonzero(address participant);
 
     /// @dev Thrown if the provided participant already exists.
-    error SharedWallet_ParticipantExistentAlready();
+    error SharedWalletController_ParticipantExistentAlready();
 
     /// @dev Thrown if the provided participant does not exist.
-    error SharedWallet_ParticipantNonexistent(); // TODO: add parameters
+    error SharedWalletController_ParticipantNonexistent(); // TODO: add parameters
 
     /// @dev Thrown if the provided token is unauthorized.
-    error SharedWallet_TokenUnauthorized();
+    error SharedWalletController_TokenUnauthorized();
 
     /// @dev Thrown if the provided wallet address is zero.
-    error SharedWallet_WalletAddressZero();
+    error SharedWalletController_WalletAddressZero();
 
     /// @dev Thrown if the provided wallet already exists.
-    error SharedWallet_WalletExistentAlready();
+    error SharedWalletController_WalletExistentAlready();
 
     /// @dev Thrown if the current wallet balance is insufficient for the operation.
-    error SharedWallet_WalletBalanceInsufficient(); // TODO: add paremeters
+    error SharedWalletController_WalletBalanceInsufficient(); // TODO: add paremeters
 
     /// @dev Thrown if the current wallet balance is nonzero.
-    error SharedWallet_WalletBalanceNonzero();
+    error SharedWalletController_WalletBalanceNonzero();
 
     /// @dev Thrown if the provided wallet does not exist.
-    error SharedWallet_WalletNonexistent();
+    error SharedWalletController_WalletNonexistent();
 
     /// @dev Thrown if the provided wallet status is incompatible.
-    error SharedWallet_WalletStatusIncompatible( // TODO: should we use uint256 instead?
+    error SharedWalletController_WalletStatusIncompatible( // TODO: should we use uint256 instead?
         SharedWalletStatus actualStatus,
         SharedWalletStatus compatibleStatus
     );
