@@ -86,10 +86,11 @@ interface ISharedWalletControllerTypes {
      * - balance -- The balance of the participant in the wallet.
      */
     struct ParticipantState {
-        // TODO: Add storage slot comments
+        // Slot 1
         ParticipantStatus status;
         uint16 index;
         uint64 balance;
+        // uint168 __reserved; // Reserved for future use until the end of the storage slot
     }
 
     /**
@@ -103,11 +104,18 @@ interface ISharedWalletControllerTypes {
      * - participantStates -- The states of the participants in the wallet.
      */
     struct SharedWallet {
-        // TODO: Add storage slot comments
-        address[] participants;
-        mapping(address participant => ParticipantState) participantStates;
-        uint64 totalBalance; // TODO: 1. Use `uint64`. 2. Rename, options: `balance`, `sharedBalance`.
+        // Slot 1
         SharedWalletStatus status;
+        uint64 totalBalance; // TODO: 1. Use `uint64`. 2. Rename, options: `balance`, `sharedBalance`.
+        // uint184__reserved; // Reserved for future use until the end of the storage slot
+
+        // Slot 2
+        address[] participants;
+        // No reserve until the end of the storage slot
+
+        // Slot 3
+        mapping(address participant => ParticipantState) participantStates;
+        // No reserve until the end of the storage slot
     }
 
     /**
