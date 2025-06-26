@@ -15,6 +15,7 @@ import "./interfaces/IERC20Hook.sol";
 interface ISharedWalletController is IERC20Hook {
     enum SharedWalletStatus {
         Nonexistent,
+        Created,
         Active,
         Deactivated
     }
@@ -60,7 +61,12 @@ interface ISharedWalletController is IERC20Hook {
 
     // Events
     event WalletCreated(address indexed wallet);
-    event WalletDeactivated(address indexed wallet);
+
+    event WalletStatusChanged(
+        address indexed wallet,
+        SharedWalletStatus indexed newStatus,
+        SharedWalletStatus oldStatus
+    );
 
     event WalletParticipantOperation(
         address indexed wallet,
@@ -98,6 +104,8 @@ interface ISharedWalletController is IERC20Hook {
 
     function deactivateWallet(address wallet) external;
 
+    function removeWallet(address wallet) external;
+
     function addParticipants(address wallet, address[] calldata participants) external;
 
     function removeParticipants(address wallet, address[] calldata participants) external;
@@ -127,6 +135,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
 
     // Constants
     bytes32 private constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 private constant OWNER_ROLE = keccak256("OWNER_ROLE");
     uint256 private constant NON_EXISTENT_PARTICIPANT_INDEX = type(uint256).max;
 
     // State variables
@@ -154,6 +163,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
         SharedWallet storage sharedWallet = _wallets[wallet];
         sharedWallet.status = SharedWalletStatus.Active;
         emit WalletCreated(wallet);
+        emit WalletStatusChanged(wallet, SharedWalletStatus.Active, SharedWalletStatus.Nonexistent);
 
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
@@ -166,7 +176,18 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
         if (sharedWallet.status != SharedWalletStatus.Active) revert SharedWallet_WalletNotActive();
         if (sharedWallet.totalBalance > 0) revert SharedWallet_WalletBalanceNonzero();
         _wallets[wallet].status = SharedWalletStatus.Deactivated;
-        emit WalletDeactivated(wallet);
+        emit WalletStatusChanged(wallet, SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
+    }
+
+    function removeWallet(address wallet) external onlyRole(OWNER_ROLE) {
+        SharedWallet storage sharedWallet = _wallets[wallet];
+        if (sharedWallet.status == SharedWalletStatus.Nonexistent) revert SharedWallet_WalletNonexistent();
+        if (sharedWallet.totalBalance > 0) revert SharedWallet_WalletBalanceNonzero();
+        for (uint256 i = 0; i < sharedWallet.participants.length; i++) {
+            _removeParticipantFromWallet(wallet, sharedWallet.participants[i]);
+        }
+        sharedWallet.status = SharedWalletStatus.Nonexistent;
+        emit WalletStatusChanged(wallet, SharedWalletStatus.Nonexistent, sharedWallet.status);
     }
 
     function addParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
@@ -205,8 +226,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     function removeParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
         if (_wallets[wallet].status == SharedWalletStatus.Nonexistent) revert SharedWallet_WalletNonexistent();
         for (uint256 i = 0; i < participants.length; i++) {
-            address participant = participants[i];
-            _removeParticipantFromWallet(wallet, participant);
+            _removeParticipantFromWallet(wallet, participants[i]);
         }
     }
 
