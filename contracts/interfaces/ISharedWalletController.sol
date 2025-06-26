@@ -313,7 +313,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     error SharedWalletController_ParticipantArrayEmpty();
 
     /// @dev Thrown if the current participant balance is insufficient for the operation.
-    error SharedWalletController_ParticipantBalanceInsufficient(); // TODO: add paremeters
+    error SharedWalletController_ParticipantBalanceInsufficient();
 
     /// @dev Thrown if the current participant balance is nonzero.
     error SharedWalletController_ParticipantBalanceNonzero(address participant);
@@ -322,7 +322,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     error SharedWalletController_ParticipantExistentAlready();
 
     /// @dev Thrown if the provided participant does not exist.
-    error SharedWalletController_ParticipantNonexistent(); // TODO: add parameters
+    error SharedWalletController_ParticipantNonexistent(address participant);
 
     /// @dev Thrown if the provided token is unauthorized.
     error SharedWalletController_TokenUnauthorized();
@@ -334,7 +334,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     error SharedWalletController_WalletExistentAlready();
 
     /// @dev Thrown if the current wallet balance is insufficient for the operation.
-    error SharedWalletController_WalletBalanceInsufficient(); // TODO: add paremeters
+    error SharedWalletController_WalletBalanceInsufficient();
 
     /// @dev Thrown if the current wallet balance is nonzero.
     error SharedWalletController_WalletBalanceNonzero();
@@ -343,7 +343,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     error SharedWalletController_WalletNonexistent();
 
     /// @dev Thrown if the provided wallet status is incompatible.
-    error SharedWalletController_WalletStatusIncompatible( // TODO: should we use uint256 instead?
+    error SharedWalletController_WalletStatusIncompatible(
         SharedWalletStatus actualStatus,
         SharedWalletStatus compatibleStatus
     );

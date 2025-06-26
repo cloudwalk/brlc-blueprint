@@ -368,7 +368,7 @@ contract SharedWalletController is
     ) internal {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
         if (sharedWallet.participantStates[participant].status == ParticipantStatus.Nonexistent) {
-            revert SharedWalletController_ParticipantNonexistent();
+            revert SharedWalletController_ParticipantNonexistent(participant);
         }
         if (sharedWallet.participantStates[participant].balance > 0) {
             revert SharedWalletController_ParticipantBalanceNonzero(participant);
