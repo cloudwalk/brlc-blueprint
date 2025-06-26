@@ -92,6 +92,7 @@ interface ISharedWalletController is IERC20Hook {
     error SharedWallet_ParticipantInsufficientBalance(); // TODO: add paremeters
     error SharedWallet_ParticipantNonExistent(); // TODO: add parameters
     error SharedWallet_TokenUnauthorized();
+    error SharedWallet_WalletActive();
     error SharedWallet_WalletAlreadyExists();
     error SharedWallet_WalletDeactivated(); // TODO: add paremeters
     error SharedWallet_WalletInsufficientBalance(); // TODO: add paremeters
@@ -103,6 +104,8 @@ interface ISharedWalletController is IERC20Hook {
     function createWallet(address wallet, address[] calldata participants) external;
 
     function deactivateWallet(address wallet) external;
+
+    function activateWallet(address wallet) external;
 
     function removeWallet(address wallet) external;
 
@@ -158,9 +161,9 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     ) external onlyRole(ADMIN_ROLE) {
         if (wallet == address(0)) revert SharedWallet_AddressZero();
         if (participants.length == 0) revert SharedWallet_ParticipantArrayEmpty();
-        if (_wallets[wallet].status != SharedWalletStatus.Nonexistent) revert SharedWallet_WalletAlreadyExists();
-
         SharedWallet storage sharedWallet = _wallets[wallet];
+        if (sharedWallet.status != SharedWalletStatus.Nonexistent) revert SharedWallet_WalletAlreadyExists();
+
         sharedWallet.status = SharedWalletStatus.Active;
         emit WalletCreated(wallet);
         emit WalletStatusChanged(wallet, SharedWalletStatus.Active, SharedWalletStatus.Nonexistent);
@@ -173,10 +176,29 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
 
     function deactivateWallet(address wallet) external onlyRole(ADMIN_ROLE) {
         SharedWallet storage sharedWallet = _wallets[wallet];
-        if (sharedWallet.status != SharedWalletStatus.Active) revert SharedWallet_WalletNotActive();
+        if (sharedWallet.status != SharedWalletStatus.Active) {
+            if (sharedWallet.status == SharedWalletStatus.Nonexistent) {
+                revert SharedWallet_WalletNonexistent();
+            } else {
+                revert SharedWallet_WalletDeactivated();
+            }
+        }
         if (sharedWallet.totalBalance > 0) revert SharedWallet_WalletBalanceNonzero();
         _wallets[wallet].status = SharedWalletStatus.Deactivated;
         emit WalletStatusChanged(wallet, SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
+    }
+
+    function activateWallet(address wallet) external onlyRole(ADMIN_ROLE) {
+        SharedWallet storage sharedWallet = _wallets[wallet];
+        if (sharedWallet.status != SharedWalletStatus.Deactivated) {
+            if (sharedWallet.status == SharedWalletStatus.Nonexistent) {
+                revert SharedWallet_WalletNonexistent();
+            } else {
+                revert SharedWallet_WalletActive();
+            }
+        }
+        sharedWallet.status = SharedWalletStatus.Active;
+        emit WalletStatusChanged(wallet, SharedWalletStatus.Active, SharedWalletStatus.Deactivated);
     }
 
     function removeWallet(address wallet) external onlyRole(OWNER_ROLE) {
