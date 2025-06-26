@@ -167,7 +167,7 @@ contract SharedWalletController is
         SharedWallet storage sharedWallet = _getExistentWallet(wallet);
         if (sharedWallet.totalBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
         for (uint256 i = 0; i < sharedWallet.participants.length; i++) {
-            _removeParticipantFromWallet(wallet, sharedWallet.participants[i]);
+            _removeParticipantFromWallet(wallet, sharedWallet.participants[i], false);
         }
         sharedWallet.status = SharedWalletStatus.Nonexistent;
         emit WalletStatusChanged(wallet, SharedWalletStatus.Nonexistent, sharedWallet.status);
@@ -213,7 +213,7 @@ contract SharedWalletController is
     ) external onlyRole(ADMIN_ROLE) {
         _getExistentWallet(wallet);
         for (uint256 i = 0; i < participants.length; i++) {
-            _removeParticipantFromWallet(wallet, participants[i]);
+            _removeParticipantFromWallet(wallet, participants[i], true);
         }
     }
 
@@ -366,7 +366,8 @@ contract SharedWalletController is
      */
     function _removeParticipantFromWallet(
         address wallet,
-        address participant
+        address participant,
+        bool prohibitInitiatorRemoval
     ) internal {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
         if (sharedWallet.participantStates[participant].status == ParticipantStatus.Nonexistent) {
@@ -375,9 +376,9 @@ contract SharedWalletController is
         if (sharedWallet.participantStates[participant].balance > 0) {
             revert SharedWalletController_ParticipantBalanceNonzero(participant);
         }
-
-        // TODO: add logic to prohibit removing of the wallet initiator
-        // (sharedWallet.participants[0])
+        if (prohibitInitiatorRemoval && sharedWallet.participantStates[participant].index == 0) {
+            revert SharedWalletController_ParticipantUnremovable(participant);
+        }
 
         // Remove from the array and clear storage
         {

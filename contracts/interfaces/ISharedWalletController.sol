@@ -330,6 +330,8 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     /// @dev Thrown if the provided participant is a shared wallet.
     error SharedWalletController_ParticipantIsSharedWallet();
 
+    /// @dev Thrown if the provided participant is not allowed to be removed from the wallet.
+    error SharedWalletController_ParticipantUnremovable(address participant);
 
     /// @dev Thrown if the provided token is unauthorized.
     error SharedWalletController_TokenUnauthorized();
