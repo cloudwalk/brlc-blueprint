@@ -50,6 +50,19 @@ interface ISharedWalletController is IERC20Hook {
         uint256 balance;
     }
 
+    struct WalletParticipantPair {
+        address wallet;
+        address participant;
+    }
+
+    struct ParticipantStateView {
+        address wallet;
+        ParticipantStatus status;
+        uint16 index;
+        address participant;
+        uint256 balance;
+    }
+
     // in participant the first address is always the initiator of the wallet.
     struct SharedWallet {
         SharedWalletStatus status;
@@ -115,18 +128,15 @@ interface ISharedWalletController is IERC20Hook {
     function removeParticipants(address wallet, address[] calldata participants) external;
 
     // View functions
-    function getWalletInfo(
-        address wallet
-    ) external view returns (address[] memory participants, uint256[] memory balances);
+    function getParticipantStates(WalletParticipantPair[] calldata participantWalletPairs) external view returns (ParticipantStateView[] memory participantStates);
 
-    function getParticipantBalance(address wallet, address participant) external view returns (uint256);
+    function getWallets(address participant) external view returns (address[] memory wallets);
 
-    function getParticipantWallets(
-        address participant
-    ) external view returns (address[] memory wallets);
+    function getParticipants(address wallet) external view returns (address[] memory participants);
 
-    // TODO: simplify name: `isParticipant`
-    function isWalletParticipant(address wallet, address participant) external view returns (bool);
+    function getParticipantBalance(address wallet, address participant) external view returns (uint256 balance);
+
+    function isParticipant(address wallet, address participant) external view returns (bool);
 }
 
 /**
@@ -211,7 +221,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     }
 
     function addParticipants(
-        address wallet, 
+        address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
         _getExistentWallet(wallet);
@@ -251,7 +261,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     }
 
     function removeParticipants(
-        address wallet, 
+        address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
         _getExistentWallet(wallet);
@@ -261,7 +271,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     }
 
     function _removeParticipantFromWallet(
-        address wallet, 
+        address wallet,
         address participant
     ) internal {
         SharedWallet storage sharedWallet = _wallets[wallet];
@@ -293,7 +303,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
             participant,
             ParticipantOperationKind.Removal
         );
-        
+
     }
 
     // Hook implementation
@@ -374,7 +384,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
 
         emit WalletBalanceOperation(
             wallet,
-        participant,
+            participant,
             transferKind == uint256(TransferKind.Receiving)
                 ? BalanceOperationKind.Deposit
                 : BalanceOperationKind.Withdrawal,
@@ -415,7 +425,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
                 emit WalletBalanceOperation(
                     wallet,
                     participant,
-                    transferKind == uint256(TransferKind.Receiving) 
+                    transferKind == uint256(TransferKind.Receiving)
                         ? BalanceOperationKind.TransferIn
                         : BalanceOperationKind.TransferOut,
                     newParticipantBalance,
@@ -471,16 +481,75 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     }
 
     // View functions
-    function getWalletInfo(
-        address wallet
-    ) external view returns (address[] memory participants, uint256[] memory balances) {
-        SharedWallet storage sharedWallet = _wallets[wallet];
-        participants = sharedWallet.participants;
-        balances = new uint256[](participants.length);
-
-        for (uint256 i = 0; i < participants.length; i++) {
-            balances[i] = sharedWallet.participantStates[participants[i]].balance;
+    function getParticipantStates(
+        WalletParticipantPair[] calldata participantWalletPairs
+    ) external view returns (ParticipantStateView[] memory participantStates) {
+        WalletParticipantPair[] memory pairs = _normalizeParticipantWalletPairs(participantWalletPairs);
+        uint256 pairsCount = pairs.length;
+        participantStates = new ParticipantStateView[](pairsCount);
+        for (uint256 i = 0; i < pairsCount; i++) {
+            address wallet = pairs[i].wallet;
+            address participant = pairs[i].participant;
+            participantStates[i].wallet = wallet;
+            participantStates[i].participant = participant;
+            participantStates[i].status = _wallets[wallet].participantStates[participant].status;
+            participantStates[i].index = _wallets[wallet].participantStates[participant].index;
+            participantStates[i].balance = _wallets[wallet].participantStates[participant].balance;
         }
+    }
+
+    function _normalizeParticipantWalletPairs(
+        WalletParticipantPair[] calldata participantWalletPairs
+    ) internal view returns (WalletParticipantPair[] memory) {
+        uint256 initialPairCount = participantWalletPairs.length;
+
+        // First pass: count actual pairs and validate
+        uint256 actualPairCount = 0;
+        for (uint256 i = 0; i < initialPairCount; i++) {
+            WalletParticipantPair calldata pair = participantWalletPairs[i];
+
+            if (pair.wallet == address(0) && pair.participant == address(0)) {
+                revert SharedWallet_ParticipantAddressZero();
+            }
+
+            if (pair.wallet == address(0)) {
+                actualPairCount += _participantWallets[pair.participant].length();
+            } else if (pair.participant == address(0)) {
+                actualPairCount += _wallets[pair.wallet].participants.length;
+            } else {
+                actualPairCount += 1;
+            }
+        }
+
+        if (actualPairCount == initialPairCount) {
+            return participantWalletPairs;
+        }
+
+        // Second pass: build the expanded array
+        WalletParticipantPair[] memory actualPairs = new WalletParticipantPair[](actualPairCount);
+        uint256 pairIndex = 0;
+
+        for (uint256 i = 0; i < initialPairCount; i++) {
+            WalletParticipantPair calldata pair = participantWalletPairs[i];
+
+            if (pair.wallet == address(0)) {
+                EnumerableSet.AddressSet storage participantWallets = _participantWallets[pair.participant];
+                uint256 walletsCount = participantWallets.length();
+                for (uint256 j = 0; j < walletsCount; j++) {
+                    actualPairs[pairIndex++] = WalletParticipantPair(participantWallets.at(j), pair.participant);
+                }
+            } else if (pair.participant == address(0)) {
+                SharedWallet storage sharedWallet = _wallets[pair.wallet];
+                uint256 participantsCount = sharedWallet.participants.length;
+                for (uint256 j = 0; j < participantsCount; j++) {
+                    actualPairs[pairIndex++] = WalletParticipantPair(pair.wallet, sharedWallet.participants[j]);
+                }
+            } else {
+                actualPairs[pairIndex++] = pair;
+            }
+        }
+
+        return actualPairs;
     }
 
     function getParticipantBalance(address wallet, address participant) external view returns (uint256) {
@@ -492,15 +561,15 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
         }
     }
 
-    function getParticipantWallets( //TODO: rename, options: `getWalletsOfParticipant()`, getWalletsForParticipant()
-        address participant
-    ) external view returns (address[] memory wallets) {
+    function getWallets(address participant) external view returns (address[] memory wallets) {
         return _participantWallets[participant].values();
     }
 
-    // TODO: rename, options: `isParticipant()`
-    function isWalletParticipant(address wallet, address participant) public view returns (bool) {
-        if (_wallets[wallet].status != SharedWalletStatus.Active) return false;
-        return _wallets[wallet].participantStates[participant].status != ParticipantStatus.Nonexistent;
+    function getParticipants(address wallet) external view returns (address[] memory participants) {
+        return _wallets[wallet].participants;
+    }
+
+    function isParticipant(address wallet, address participant) external view returns (bool) {
+        return _wallets[wallet].participantStates[participant].status == ParticipantStatus.Active;
     }
 }
