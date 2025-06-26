@@ -99,14 +99,14 @@ interface ISharedWalletControllerTypes {
      * The fields:
      *
      * - status ------------- The status of the wallet according to the {SharedWalletStatus} enum.
-     * - totalBalance ------- The total balance of the wallet.
+     * - sharedBalance ------ The balance of the wallet that is shared among participants.
      * - participants ------- The addresses of the participants in the wallet.
      * - participantStates -- The states of the participants in the wallet.
      */
     struct SharedWallet {
         // Slot 1
         SharedWalletStatus status;
-        uint64 totalBalance; // TODO: 1. Use `uint64`. 2. Rename, options: `balance`, `sharedBalance`.
+        uint64 sharedBalance;
         // uint184__reserved; // Reserved for future use until the end of the storage slot
 
         // Slot 2
@@ -233,10 +233,10 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     function deactivateWallet(address wallet) external;
 
     /**
-     * @dev Activates a wallet.
+     * @dev Activates a wallet that was previously deactivated.
      * @param wallet The address of the wallet.
      */
-    function activateWallet(address wallet) external; // TODO: rename to `reactivateWallet()`
+    function activateWallet(address wallet) external;
 
     /**
      * @dev Removes a wallet and all its participants. The result state is the same as if the wallet was never created.

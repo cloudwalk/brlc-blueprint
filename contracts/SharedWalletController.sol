@@ -132,7 +132,7 @@ contract SharedWalletController is
         if (sharedWallet.status != SharedWalletStatus.Active) {
             revert SharedWalletController_WalletStatusIncompatible(sharedWallet.status, SharedWalletStatus.Active);
         }
-        if (sharedWallet.totalBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
+        if (sharedWallet.sharedBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
         _getSharedWalletControllerStorage().wallets[wallet].status = SharedWalletStatus.Deactivated;
         emit WalletStatusChanged(wallet, SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
     }
@@ -167,7 +167,7 @@ contract SharedWalletController is
      */
     function removeWallet(address wallet) external onlyRole(OWNER_ROLE) {
         SharedWallet storage sharedWallet = _getExistentWallet(wallet);
-        if (sharedWallet.totalBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
+        if (sharedWallet.sharedBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
         for (uint256 i = 0; i < sharedWallet.participants.length; i++) {
             _removeParticipantFromWallet(wallet, sharedWallet.participants[i], false);
         }
@@ -468,7 +468,7 @@ contract SharedWalletController is
     ) internal {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
         ParticipantState storage state = sharedWallet.participantStates[participant];
-        uint256 oldWalletBalance = sharedWallet.totalBalance;
+        uint256 oldWalletBalance = sharedWallet.sharedBalance;
         uint256 newWalletBalance;
         uint256 oldParticipantBalance = state.balance;
         uint256 newParticipantBalance;
@@ -487,7 +487,7 @@ contract SharedWalletController is
         }
 
         state.balance = newParticipantBalance.toUint64();
-        sharedWallet.totalBalance = newWalletBalance.toUint64();
+        sharedWallet.sharedBalance = newWalletBalance.toUint64();
 
         emit WalletBalanceOperation(
             wallet,
@@ -510,7 +510,7 @@ contract SharedWalletController is
      */
     function _processTransfer(address wallet, uint256 amount, uint256 transferKind) internal {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
-        uint256 oldWalletBalance = sharedWallet.totalBalance;
+        uint256 oldWalletBalance = sharedWallet.sharedBalance;
         uint256 newWalletBalance;
         if (transferKind == uint256(TransferKind.Receiving)) {
             newWalletBalance = oldWalletBalance + amount;
@@ -523,7 +523,7 @@ contract SharedWalletController is
         uint256[] memory shares = _determineShares(amount, sharedWallet);
         uint256 participantCount = sharedWallet.participants.length;
 
-        sharedWallet.totalBalance = newWalletBalance.toUint64();
+        sharedWallet.sharedBalance = newWalletBalance.toUint64();
 
         for (uint256 i = 0; i < participantCount; ++i) {
             if (shares[i] > 0) {
@@ -562,7 +562,7 @@ contract SharedWalletController is
     ) internal view returns (uint256[] memory) {
         uint256 i = sharedWallet.participants.length;
         uint256[] memory shares = new uint256[](i);
-        uint256 totalBalance = sharedWallet.totalBalance;
+        uint256 totalBalance = sharedWallet.sharedBalance;
         uint256 totalShares = 0;
         uint256 lastNonZeroBalanceIndex = 0;
         if (totalBalance != 0) {
