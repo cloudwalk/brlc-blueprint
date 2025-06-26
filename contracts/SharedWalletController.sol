@@ -82,7 +82,7 @@ interface ISharedWalletController is IERC20Hook {
     error SharedWallet_AddressZero();
     error SharedWallet_ParticipantAlreadyExists();
     error SharedWallet_ParticipantArrayEmpty();
-    error SharedWallet_ParticipantHasBalance(); // TODO: add the participant address parameter
+    error SharedWallet_ParticipantBalanceNonzero(address participant); // TODO: add the participant address parameter
     error SharedWallet_ParticipantInsufficientBalance(); // TODO: add paremeters
     error SharedWallet_ParticipantNonExistent(); // TODO: add parameters
     error SharedWallet_TokenUnauthorized();
@@ -91,6 +91,7 @@ interface ISharedWalletController is IERC20Hook {
     error SharedWallet_WalletInsufficientBalance(); // TODO: add paremeters
     error SharedWallet_WalletNotActive();
     error SharedWallet_WalletNonexistent();
+    error SharedWallet_WalletBalanceNonzero();
 
     // Admin functions
     function createWallet(address wallet, address[] calldata participants) external;
@@ -161,7 +162,9 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     }
 
     function deactivateWallet(address wallet) external onlyRole(ADMIN_ROLE) {
-        if (_wallets[wallet].status != SharedWalletStatus.Active) revert SharedWallet_WalletNotActive();
+        SharedWallet storage sharedWallet = _wallets[wallet];
+        if (sharedWallet.status != SharedWalletStatus.Active) revert SharedWallet_WalletNotActive();
+        if (sharedWallet.totalBalance > 0) revert SharedWallet_WalletBalanceNonzero();
         _wallets[wallet].status = SharedWalletStatus.Deactivated;
         emit WalletDeactivated(wallet);
     }
@@ -212,7 +215,9 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
         if (sharedWallet.participantStates[participant].status == ParticipantStatus.Nonexistent) {
             revert SharedWallet_ParticipantNonExistent();
         }
-        if (sharedWallet.participantStates[participant].balance > 0) revert SharedWallet_ParticipantHasBalance();
+        if (sharedWallet.participantStates[participant].balance > 0) {
+            revert SharedWallet_ParticipantBalanceNonzero(participant);
+        }
 
         // TODO: add logic to prohibit removing of the wallet initiator (sharedWallet.participants[0])
 
