@@ -29,7 +29,7 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
      * keccak256(abi.encode(uint256(keccak256("cloudwalk.storage.SharedWalletController")) - 1)) & ~bytes32(uint256(0xff))
      */
     bytes32 private constant SHARED_WALLET_CONTROLLER_STORAGE_LOCATION =
-        0x0000000000000000000000000000000000000000000000000000000000000000; // TODO: fix this
+        0xe11e49cf5c86defdf380231d4bda7c92d28e7f1f0a1fd45e8b00ac3bd9182c00;
 
     /**
      * @dev Defines the contract storage structure.
