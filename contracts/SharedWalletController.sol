@@ -337,10 +337,12 @@ contract SharedWalletController is
         if (sharedWallet.participantStates[participant].status != ParticipantStatus.Nonexistent) {
             revert SharedWalletController_ParticipantExistentAlready();
         }
-
-        // TODO: Prohibit use another shared wallet as a participant.
-
-        // TODO: number of participants check.
+        if(_getSharedWalletControllerStorage().wallets[participant].status != SharedWalletStatus.Nonexistent) {
+            revert SharedWalletController_ParticipantIsSharedWallet();
+        }
+        if (sharedWallet.participants.length >= _getMaxParticipantsPerWallet()) {
+            revert SharedWalletController_ParticipantCountExcess();
+        }
 
         uint256 participantIndex = sharedWallet.participants.length;
         sharedWallet.participants.push(participant);
@@ -396,6 +398,17 @@ contract SharedWalletController is
             ParticipantOperationKind.Removal
         );
 
+    }
+
+    /**
+     * @dev Returns the maximum number of participants per wallet.
+     * 
+     * This function is useful for testing purposes.
+     * 
+     * @return The maximum number of participants per wallet.
+     */
+    function _getMaxParticipantsPerWallet() internal pure virtual returns (uint256) {
+        return MAX_PARTICIPANTS_PER_WALLET;
     }
 
     /**

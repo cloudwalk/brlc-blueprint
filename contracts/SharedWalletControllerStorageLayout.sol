@@ -19,6 +19,9 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
     /// @dev The role of admin that is allowed to perform administrative operations.
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    /// @dev The maximum number of participants per wallet.
+    uint256 public constant MAX_PARTICIPANTS_PER_WALLET = 100;
+
     // ------------------ Storage layout -------------------------- //
 
     /*
@@ -26,7 +29,7 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
      * keccak256(abi.encode(uint256(keccak256("cloudwalk.storage.SharedWalletController")) - 1)) & ~bytes32(uint256(0xff))
      */
     bytes32 private constant SHARED_WALLET_CONTROLLER_STORAGE_LOCATION =
-        0x0000000000000000000000000000000000000000000000000000000000000000;
+        0x0000000000000000000000000000000000000000000000000000000000000000; // TODO: fix this
 
     /**
      * @dev Defines the contract storage structure.

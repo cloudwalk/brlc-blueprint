@@ -318,11 +318,18 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     /// @dev Thrown if the current participant balance is nonzero.
     error SharedWalletController_ParticipantBalanceNonzero(address participant);
 
+    /// @dev Thrown if during the operation the number of participants in the wallet exceeds the limit.
+    error SharedWalletController_ParticipantCountExcess();
+
     /// @dev Thrown if the provided participant already exists.
     error SharedWalletController_ParticipantExistentAlready();
 
     /// @dev Thrown if the provided participant does not exist.
     error SharedWalletController_ParticipantNonexistent(address participant);
+
+    /// @dev Thrown if the provided participant is a shared wallet.
+    error SharedWalletController_ParticipantIsSharedWallet();
+
 
     /// @dev Thrown if the provided token is unauthorized.
     error SharedWalletController_TokenUnauthorized();
