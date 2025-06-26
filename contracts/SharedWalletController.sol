@@ -85,20 +85,20 @@ interface ISharedWalletController is IERC20Hook {
     );
 
     // Custom errors
-    error SharedWallet_AddressZero();
-    error SharedWallet_ParticipantAlreadyExists();
+    error SharedWallet_ParticipantAddressZero();
     error SharedWallet_ParticipantArrayEmpty();
+    error SharedWallet_ParticipantBalanceInsufficient(); // TODO: add paremeters
     error SharedWallet_ParticipantBalanceNonzero(address participant); // TODO: add the participant address parameter
-    error SharedWallet_ParticipantInsufficientBalance(); // TODO: add paremeters
-    error SharedWallet_ParticipantNonExistent(); // TODO: add parameters
+    error SharedWallet_ParticipantExistentAlready();
+    error SharedWallet_ParticipantNonexistent(); // TODO: add parameters
     error SharedWallet_TokenUnauthorized();
+    error SharedWallet_WalletAddressZero();
     error SharedWallet_WalletActive();
-    error SharedWallet_WalletAlreadyExists();
     error SharedWallet_WalletDeactivated(); // TODO: add paremeters
-    error SharedWallet_WalletInsufficientBalance(); // TODO: add paremeters
-    error SharedWallet_WalletNotActive();
-    error SharedWallet_WalletNonexistent();
+    error SharedWallet_WalletExistentAlready();
+    error SharedWallet_WalletBalanceInsufficient(); // TODO: add paremeters
     error SharedWallet_WalletBalanceNonzero();
+    error SharedWallet_WalletNonexistent();
 
     // Admin functions
     function createWallet(address wallet, address[] calldata participants) external;
@@ -148,7 +148,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     mapping(address => EnumerableSet.AddressSet) private _participantWallets;
 
     constructor(address token_) {
-        if (token_ == address(0)) revert SharedWallet_AddressZero();
+        if (token_ == address(0)) revert SharedWallet_WalletAddressZero();
         _token = IERC20(token_);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender); // TODO: Use OWNER_ROLE
         _grantRole(ADMIN_ROLE, msg.sender); // TODO: Redundant
@@ -159,10 +159,10 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
         address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
-        if (wallet == address(0)) revert SharedWallet_AddressZero();
+        if (wallet == address(0)) revert SharedWallet_WalletAddressZero();
         if (participants.length == 0) revert SharedWallet_ParticipantArrayEmpty();
         SharedWallet storage sharedWallet = _wallets[wallet];
-        if (sharedWallet.status != SharedWalletStatus.Nonexistent) revert SharedWallet_WalletAlreadyExists();
+        if (sharedWallet.status != SharedWalletStatus.Nonexistent) revert SharedWallet_WalletExistentAlready();
 
         sharedWallet.status = SharedWalletStatus.Active;
         emit WalletCreated(wallet);
@@ -224,10 +224,10 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
         address wallet,
         address participant
     ) internal {
-        if (participant == address(0)) revert SharedWallet_AddressZero();
+        if (participant == address(0)) revert SharedWallet_ParticipantAddressZero();
         SharedWallet storage sharedWallet = _wallets[wallet];
         if (sharedWallet.participantStates[participant].status != ParticipantStatus.Nonexistent) {
-            revert SharedWallet_ParticipantAlreadyExists();
+            revert SharedWallet_ParticipantExistentAlready();
         }
 
         uint256 participantIndex = sharedWallet.participants.length;
@@ -255,7 +255,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
     function _removeParticipantFromWallet(address wallet, address participant) internal {
         SharedWallet storage sharedWallet = _wallets[wallet];
         if (sharedWallet.participantStates[participant].status == ParticipantStatus.Nonexistent) {
-            revert SharedWallet_ParticipantNonExistent();
+            revert SharedWallet_ParticipantNonexistent();
         }
         if (sharedWallet.participantStates[participant].balance > 0) {
             revert SharedWallet_ParticipantBalanceNonzero(participant);
@@ -365,10 +365,10 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
             newWalletBalance = oldWalletBalance + amount;
         } else {
             if (oldWalletBalance < amount) {
-                revert SharedWallet_WalletInsufficientBalance();
+                revert SharedWallet_WalletBalanceInsufficient();
             }
             if (oldParticipantBalance < amount) {
-                revert SharedWallet_ParticipantInsufficientBalance();
+                revert SharedWallet_ParticipantBalanceInsufficient();
             }
             newParticipantBalance = oldParticipantBalance - amount;
             newWalletBalance = oldWalletBalance - amount;
@@ -398,7 +398,7 @@ contract SharedWalletController is ISharedWalletController, AccessControl {
             newWalletBalance = oldWalletBalance + amount;
         } else {
             if (oldWalletBalance < amount) {
-                revert SharedWallet_WalletInsufficientBalance();
+                revert SharedWallet_WalletBalanceInsufficient();
             }
             newWalletBalance = oldWalletBalance - amount;
         }
