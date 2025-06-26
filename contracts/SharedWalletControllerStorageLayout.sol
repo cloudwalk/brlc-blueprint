@@ -22,6 +22,9 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
     /// @dev The maximum number of participants per wallet.
     uint256 public constant MAX_PARTICIPANTS_PER_WALLET = 100;
 
+    /// @dev The accuracy factor to rounding down the shares of the participants during transfers.
+    uint256 public constant ACCURACY_FACTOR = 10000;
+
     // ------------------ Storage layout -------------------------- //
 
     /*

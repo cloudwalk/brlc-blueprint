@@ -601,7 +601,8 @@ contract SharedWalletController is
         uint256 balance,
         uint256 totalBalance
     ) internal pure returns (uint256) {
-        return amount * balance / totalBalance; // TODO: Round to cents
+        uint256 share = amount * balance / totalBalance;
+        return (share / ACCURACY_FACTOR) * ACCURACY_FACTOR; // Round down according to the accuracy factor
     }
 
     /**
