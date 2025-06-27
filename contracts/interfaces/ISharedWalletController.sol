@@ -23,7 +23,7 @@ interface ISharedWalletControllerTypes {
      *  - 2. Only a wallet with the zero balance can be deactivated.
      *  - 3. It is not possible to reactivate a deactivated wallet.
      */
-    enum SharedWalletStatus {
+    enum WalletStatus {
         Nonexistent,
         Active,
         Deactivated
@@ -71,7 +71,7 @@ interface ISharedWalletControllerTypes {
      */
     struct SharedWallet {
         // Slot 1
-        SharedWalletStatus status;
+        WalletStatus status;
         uint64 sharedBalance;
         // uint184__reserved; // Reserved for future use until the end of the storage slot
 
@@ -156,7 +156,7 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
      * @param wallet The address of the removed wallet.
      * @param oldStatus The status of the wallet before removal.
      */
-    event WalletRemoved(address indexed wallet, SharedWalletStatus oldStatus);
+    event WalletRemoved(address indexed wallet, WalletStatus oldStatus);
 
     /**
      * @dev Emitted when a participant is added to a wallet.
@@ -402,8 +402,8 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
 
     /// @dev Thrown if the provided wallet status is incompatible.
     error SharedWalletController_WalletStatusIncompatible(
-        SharedWalletStatus actualStatus,
-        SharedWalletStatus compatibleStatus
+        WalletStatus actualStatus,
+        WalletStatus compatibleStatus
     );
 }
 

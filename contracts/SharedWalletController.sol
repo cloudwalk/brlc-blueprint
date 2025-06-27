@@ -105,11 +105,11 @@ contract SharedWalletController is
         if (wallet == address(0)) revert SharedWalletController_WalletAddressZero();
         if (participants.length == 0) revert SharedWalletController_ParticipantArrayEmpty();
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
-        if (sharedWallet.status != SharedWalletStatus.Nonexistent) {
+        if (sharedWallet.status != WalletStatus.Nonexistent) {
             revert SharedWalletController_WalletExistentAlready();
         }
 
-        sharedWallet.status = SharedWalletStatus.Active;
+        sharedWallet.status = WalletStatus.Active;
         emit WalletCreated(wallet);
 
         for (uint256 i = 0; i < participants.length; i++) {
@@ -128,11 +128,11 @@ contract SharedWalletController is
      */
     function deactivateWallet(address wallet) external onlyRole(ADMIN_ROLE) {
         SharedWallet storage sharedWallet = _getExistentWallet(wallet);
-        if (sharedWallet.status != SharedWalletStatus.Active) {
-            revert SharedWalletController_WalletStatusIncompatible(sharedWallet.status, SharedWalletStatus.Active);
+        if (sharedWallet.status != WalletStatus.Active) {
+            revert SharedWalletController_WalletStatusIncompatible(sharedWallet.status, WalletStatus.Active);
         }
         if (sharedWallet.sharedBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
-        _getSharedWalletControllerStorage().wallets[wallet].status = SharedWalletStatus.Deactivated;
+        _getSharedWalletControllerStorage().wallets[wallet].status = WalletStatus.Deactivated;
         emit WalletDeactivated(wallet);
     }
 
@@ -146,13 +146,13 @@ contract SharedWalletController is
      */
     function activateWallet(address wallet) external onlyRole(ADMIN_ROLE) {
         SharedWallet storage sharedWallet = _getExistentWallet(wallet);
-        if (sharedWallet.status != SharedWalletStatus.Deactivated) {
+        if (sharedWallet.status != WalletStatus.Deactivated) {
             revert SharedWalletController_WalletStatusIncompatible(
                 sharedWallet.status,
-                SharedWalletStatus.Deactivated
+                WalletStatus.Deactivated
             );
         }
-        sharedWallet.status = SharedWalletStatus.Active;
+        sharedWallet.status = WalletStatus.Active;
         emit WalletActivated(wallet);
     }
 
@@ -170,7 +170,7 @@ contract SharedWalletController is
         for (uint256 i = 0; i < sharedWallet.participants.length; i++) {
             _removeParticipantFromWallet(wallet, sharedWallet.participants[i], false);
         }
-        sharedWallet.status = SharedWalletStatus.Nonexistent;
+        sharedWallet.status = WalletStatus.Nonexistent;
         emit WalletRemoved(wallet, sharedWallet.status);
     }
 
@@ -242,18 +242,18 @@ contract SharedWalletController is
         if (msg.sender != address(_getSharedWalletControllerStorage().token)) revert SharedWalletController_TokenUnauthorized();
         if (amount == 0) return;
 
-        SharedWalletStatus status = _getSharedWalletControllerStorage().wallets[from].status;
-        if (status == SharedWalletStatus.Active) {
+        WalletStatus status = _getSharedWalletControllerStorage().wallets[from].status;
+        if (status == WalletStatus.Active) {
             _handleTransferFromWallet(from, to, amount);
-        } else if (status == SharedWalletStatus.Deactivated) {
-            revert SharedWalletController_WalletStatusIncompatible(SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
+        } else if (status == WalletStatus.Deactivated) {
+            revert SharedWalletController_WalletStatusIncompatible(WalletStatus.Deactivated, WalletStatus.Active);
         }
 
         status = _getSharedWalletControllerStorage().wallets[to].status;
-        if (status == SharedWalletStatus.Active) {
+        if (status == WalletStatus.Active) {
             _handleTransferToWallet(from, to, amount);
-        } else if (status == SharedWalletStatus.Deactivated) {
-            revert SharedWalletController_WalletStatusIncompatible(SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
+        } else if (status == WalletStatus.Deactivated) {
+            revert SharedWalletController_WalletStatusIncompatible(WalletStatus.Deactivated, WalletStatus.Active);
         }
     }
 
@@ -338,7 +338,7 @@ contract SharedWalletController is
         if (sharedWallet.participantStates[participant].status != ParticipantStatus.Nonexistent) {
             revert SharedWalletController_ParticipantExistentAlready();
         }
-        if(_getSharedWalletControllerStorage().wallets[participant].status != SharedWalletStatus.Nonexistent) {
+        if(_getSharedWalletControllerStorage().wallets[participant].status != WalletStatus.Nonexistent) {
             revert SharedWalletController_ParticipantIsSharedWallet();
         }
         if (sharedWallet.participants.length >= _getMaxParticipantsPerWallet()) {
@@ -411,7 +411,7 @@ contract SharedWalletController is
      */
     function _getExistentWallet(address wallet) internal view returns (SharedWallet storage) {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
-        if (sharedWallet.status == SharedWalletStatus.Nonexistent) revert SharedWalletController_WalletNonexistent();
+        if (sharedWallet.status == WalletStatus.Nonexistent) revert SharedWalletController_WalletNonexistent();
         return sharedWallet;
     }
 
