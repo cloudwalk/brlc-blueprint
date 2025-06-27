@@ -590,11 +590,12 @@ contract SharedWalletController is
                         oldWalletBalance
                     );
                 } else {
-                    // TODO: redundant? can happen because of shares calculation?
                     if (oldParticipantBalance < shares[i]) {
-                        revert SharedWalletController_ParticipantBalanceInsufficient();
+                        revert SharedWalletController_SharesCalculationIncorrect();
                     }
-                    newParticipantBalance = oldParticipantBalance - shares[i];
+                    unchecked{
+                        newParticipantBalance = oldParticipantBalance - shares[i];
+                    }
 
                     emit TransferOut(
                         wallet,

@@ -395,6 +395,25 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     /// @dev Thrown if the provided participant is not allowed to be removed from the wallet.
     error SharedWalletController_ParticipantUnremovable(address participant);
 
+    /**
+     * @dev Thrown if the shares calculation is incorrect.
+     *
+     * It is expected that this error is extremely rare.
+     * It can happen when the balance of a wallet equals to the transfer amount but
+     * the shares of the amount are incorrectly distributed among participants due to rounding.
+     *
+     * A numerical example:
+     *
+     * - The wallet balance is 1 BRLC.
+     * - There are 3 participants (A, B, C) with the following balances: 0.33 BRLC, 0.33 BRLC, 0.34 BRLC.
+     * - The transfer amount is 1 BRLC.
+     * - The transfer is distributed among participants with the following shares: 0.34 BRLC, 0.33 BRLC, 0.33 BRLC.
+     * - Because the share of account A is greater than its balance the transfer will fail with this error.
+     *
+     * Possible workaround: transfer 0.01 BRLC to account A, then repeat the transfer.
+     */
+    error SharedWalletController_SharesCalculationIncorrect();
+
     /// @dev Thrown if the provided token is unauthorized.
     error SharedWalletController_TokenUnauthorized();
 
