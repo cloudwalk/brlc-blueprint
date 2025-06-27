@@ -1,4 +1,5 @@
-SharedWalletController Key point:
+## `SharedWalletController` Key Points
+
 1. The first participant (index 0) has a special meaning: the initiator (owner) of a shared wallet.
 2. The first participant is not allowed to be removed from a shared wallet.
 3. Incoming tokens to a wallet are treated as:
