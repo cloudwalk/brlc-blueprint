@@ -353,11 +353,7 @@ contract SharedWalletController is
         state.balance = 0;
         _getSharedWalletControllerStorage().participantWallets[participant].add(wallet);
 
-        emit WalletParticipantOperation(
-            wallet,
-            participant,
-            ParticipantOperationKind.Addition
-        );
+        emit ParticipantAdded(wallet, participant);
     }
 
     /**
@@ -394,12 +390,7 @@ contract SharedWalletController is
 
         _getSharedWalletControllerStorage().participantWallets[participant].remove(wallet);
 
-        emit WalletParticipantOperation(
-            wallet,
-            participant,
-            ParticipantOperationKind.Removal
-        );
-
+        emit ParticipantRemoved(wallet, participant);
     }
 
     /**

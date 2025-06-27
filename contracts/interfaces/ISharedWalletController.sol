@@ -62,21 +62,6 @@ interface ISharedWalletControllerTypes {
     }
 
     /**
-     * @dev Possible operations with a participant in a shared wallet.
-     *
-     * The values:
-     *
-     * - Unknown = 0 ----- The operation is unknown (the default value).
-     * - Addition = 1 ---- A new participant has been added to the wallet.
-     * - Removal = 2 ----- A participant has been removed from the wallet.
-     */
-    enum ParticipantOperationKind {
-        Unknown,
-        Addition,
-        Removal
-    }
-
-    /**
      * @dev The state of a participant within a shared wallet to store in the contract.
      *
      * The fields:
@@ -193,17 +178,18 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     event WalletRemoved(address indexed wallet, SharedWalletStatus oldStatus);
 
     /**
-     * @dev Emitted when a participant is added or removed from a wallet.
+     * @dev Emitted when a participant is added to a wallet.
      * @param wallet The address of the wallet.
      * @param participant The address of the participant.
-     * @param kind The kind of operation.
      */
-    event WalletParticipantOperation(
-        address indexed wallet,
-        address indexed participant,
-        // TODO: use type uint256 for enum fields?
-        ParticipantOperationKind indexed kind
-    );
+    event ParticipantAdded(address indexed wallet, address indexed participant);
+
+    /**
+     * @dev Emitted when a participant is removed from a wallet.
+     * @param wallet The address of the wallet.
+     * @param participant The address of the participant.
+     */
+    event ParticipantRemoved(address indexed wallet, address indexed participant);
 
     /**
      * @dev Emitted when the balance of a participant in a wallet is changed.
