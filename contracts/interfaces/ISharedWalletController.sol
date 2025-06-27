@@ -152,11 +152,10 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     event WalletActivated(address indexed wallet);
 
     /**
-     * @dev Emitted when a shared wallet is removed.
+     * @dev Emitted when a deactivated shared wallet is removed.
      * @param wallet The address of the removed wallet.
-     * @param oldStatus The status of the wallet before removal.
      */
-    event WalletRemoved(address indexed wallet, WalletStatus oldStatus);
+    event WalletRemoved(address indexed wallet);
 
     /**
      * @dev Emitted when a participant is added to a shared wallet.
@@ -319,7 +318,7 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
      * @param participant The address of the participant.
      * @return wallets The addresses of the shared wallets of the participant.
      */
-    function getWallets(address participant) external view returns (address[] memory wallets);
+    function getParticipantWallets(address participant) external view returns (address[] memory wallets);
 
     /**
      * @dev Returns all participants of a shared wallet.
@@ -343,6 +342,18 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
      * @return True if the participant is in the shared wallet, false otherwise.
      */
     function isParticipant(address wallet, address participant) external view returns (bool);
+
+    /**
+     * @dev Returns the number of existing shared wallets.
+     * @return The number of existing shared wallets.
+     */
+    function getWalletCount() external view returns (uint256);
+
+    /**
+     * @dev Returns the aggregated balance across all shared wallets.
+     * @return The aggregated balance across all shared wallets.
+     */
+    function getAggregatedBalance() external view returns (uint256);
 }
 
 /**
@@ -404,6 +415,9 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
 
     /// @dev Thrown if the provided wallet does not exist.
     error SharedWalletController_WalletNonexistent();
+
+    /// @dev Thrown if the provided wallet and participant addresses are both zero.
+    error SharedWalletController_WalletParticipantAddressesBothZero();
 
     /// @dev Thrown if the provided wallet status is incompatible.
     error SharedWalletController_WalletStatusIncompatible(

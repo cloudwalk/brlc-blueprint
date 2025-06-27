@@ -12,8 +12,6 @@ import { ISharedWalletControllerTypes } from "./interfaces/ISharedWalletControll
  * @dev Defines the storage layout for the shared wallet controller smart-contract.
  */
 abstract contract SharedWalletControllerStorageLayout is ISharedWalletControllerTypes {
-    using EnumerableSet for EnumerableSet.AddressSet;
-
     // ------------------ Constants ------------------------------- //
 
     /// @dev The role of admin that is allowed to perform administrative operations.
@@ -27,9 +25,17 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
 
     // ------------------ Storage layout -------------------------- //
 
-    /*
-     * ERC-7201: Namespaced Storage Layout
-     * keccak256(abi.encode(uint256(keccak256("cloudwalk.storage.SharedWalletController")) - 1)) & ~bytes32(uint256(0xff))
+    /**
+     * @dev The storage location for the shared wallet controller.
+     * 
+     * See: ERC-7201 "Namespaced Storage Layout" for more details.
+     * 
+     * The value is the same as: 
+     *
+     * ```solidity
+     * string memory id = "cloudwalk.storage.SharedWalletController";
+     * bytes32 location = keccak256(abi.encode(uint256(keccak256(id) - 1)) & ~bytes32(uint256(0xff));
+     * ```
      */
     bytes32 private constant SHARED_WALLET_CONTROLLER_STORAGE_LOCATION =
         0xe11e49cf5c86defdf380231d4bda7c92d28e7f1f0a1fd45e8b00ac3bd9182c00;
@@ -55,11 +61,11 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
         // No reserve until the end of the storage slot
 
         // Slot 2
-        mapping(address => SharedWallet) wallets;
+        mapping(address wallet => SharedWallet) wallets;
         // No reserve until the end of the storage slot
 
         // Slot 3
-        mapping(address => EnumerableSet.AddressSet) participantWallets;
+        mapping(address participant => EnumerableSet.AddressSet) participantWallets;
         // No reserve until the end of the storage slot
     }
 
