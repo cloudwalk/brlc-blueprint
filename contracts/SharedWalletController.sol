@@ -111,7 +111,6 @@ contract SharedWalletController is
 
         sharedWallet.status = SharedWalletStatus.Active;
         emit WalletCreated(wallet);
-        emit WalletStatusChanged(wallet, SharedWalletStatus.Active, SharedWalletStatus.Nonexistent);
 
         for (uint256 i = 0; i < participants.length; i++) {
             address participant = participants[i];
@@ -134,7 +133,7 @@ contract SharedWalletController is
         }
         if (sharedWallet.sharedBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
         _getSharedWalletControllerStorage().wallets[wallet].status = SharedWalletStatus.Deactivated;
-        emit WalletStatusChanged(wallet, SharedWalletStatus.Deactivated, SharedWalletStatus.Active);
+        emit WalletDeactivated(wallet);
     }
 
     /**
@@ -154,7 +153,7 @@ contract SharedWalletController is
             );
         }
         sharedWallet.status = SharedWalletStatus.Active;
-        emit WalletStatusChanged(wallet, SharedWalletStatus.Active, SharedWalletStatus.Deactivated);
+        emit WalletActivated(wallet);
     }
 
     /**
@@ -172,7 +171,7 @@ contract SharedWalletController is
             _removeParticipantFromWallet(wallet, sharedWallet.participants[i], false);
         }
         sharedWallet.status = SharedWalletStatus.Nonexistent;
-        emit WalletStatusChanged(wallet, SharedWalletStatus.Nonexistent, sharedWallet.status);
+        emit WalletRemoved(wallet, sharedWallet.status);
     }
 
     /**

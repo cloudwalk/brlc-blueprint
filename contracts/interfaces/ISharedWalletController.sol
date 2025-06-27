@@ -168,23 +168,29 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     // ------------------ Events ---------------------------------- //
 
     /**
-     * @dev Emitted when a new wallet is created.
+     * @dev Emitted when a new wallet is created and activated.
      * @param wallet The address of the created wallet.
      */
     event WalletCreated(address indexed wallet);
 
     /**
-     * @dev Emitted when the status of a wallet is changed.
-     * @param wallet The address of the wallet.
-     * @param newStatus The new status of the wallet.
-     * @param oldStatus The old status of the wallet.
+     * @dev Emitted when a wallet is deactivated.
+     * @param wallet The address of the deactivated wallet.
      */
-    event WalletStatusChanged(
-        address indexed wallet,
-        // TODO: use type uint256 for enum fields?
-        SharedWalletStatus indexed newStatus,
-        SharedWalletStatus oldStatus
-    );
+    event WalletDeactivated(address indexed wallet);
+
+    /**
+     * @dev Emitted when a wallet is activated after being deactivated.
+     * @param wallet The address of the activated wallet.
+     */
+    event WalletActivated(address indexed wallet);
+
+    /**
+     * @dev Emitted when a wallet is removed.
+     * @param wallet The address of the removed wallet.
+     * @param oldStatus The status of the wallet before removal.
+     */
+    event WalletRemoved(address indexed wallet, SharedWalletStatus oldStatus);
 
     /**
      * @dev Emitted when a participant is added or removed from a wallet.
