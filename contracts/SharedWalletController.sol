@@ -276,12 +276,13 @@ contract SharedWalletController is
         for (uint256 i = 0; i < pairsCount; i++) {
             address wallet = pairs[i].wallet;
             address participant = pairs[i].participant;
-            ParticipantState storage state = _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant];
+            ParticipantState storage participantState =
+                _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant];
             participantStates[i].wallet = wallet;
             participantStates[i].participant = participant;
-            participantStates[i].status = state.status;
-            participantStates[i].index = state.index;
-            participantStates[i].balance = state.balance;
+            participantStates[i].status = participantState.status;
+            participantStates[i].index = participantState.index;
+            participantStates[i].balance = participantState.balance;
         }
     }
 
@@ -289,9 +290,10 @@ contract SharedWalletController is
      * @inheritdoc ISharedWalletControllerPrimary
      */
     function getParticipantBalance(address wallet, address participant) external view returns (uint256) {
-        ParticipantState storage state = _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant];
-        if (state.status == ParticipantStatus.Registered) {
-            return state.balance;
+        ParticipantState storage participantState =
+            _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant];
+        if (participantState.status == ParticipantStatus.Registered) {
+            return participantState.balance;
         } else {
             return 0;
         }
@@ -348,10 +350,10 @@ contract SharedWalletController is
 
         uint256 participantIndex = sharedWallet.participants.length;
         sharedWallet.participants.push(participant);
-        ParticipantState storage state = sharedWallet.participantStates[participant];
-        state.status = ParticipantStatus.Registered;
-        state.index = uint16(participantIndex);
-        state.balance = 0;
+        ParticipantState storage participantState = sharedWallet.participantStates[participant];
+        participantState.status = ParticipantStatus.Registered;
+        participantState.index = uint16(participantIndex);
+        participantState.balance = 0;
         _getSharedWalletControllerStorage().participantWallets[participant].add(wallet);
 
         emit ParticipantAdded(wallet, participant);
@@ -458,10 +460,10 @@ contract SharedWalletController is
         uint256 transferKind
     ) internal {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
-        ParticipantState storage state = sharedWallet.participantStates[participant];
+        ParticipantState storage participantState = sharedWallet.participantStates[participant];
         uint256 oldWalletBalance = sharedWallet.sharedBalance;
         uint256 newWalletBalance;
-        uint256 oldParticipantBalance = state.balance;
+        uint256 oldParticipantBalance = participantState.balance;
         uint256 newParticipantBalance;
         if (transferKind == uint256(TransferKind.Receiving)) {
             newParticipantBalance = oldParticipantBalance + amount;
@@ -497,7 +499,7 @@ contract SharedWalletController is
             );
         }
 
-        state.balance = newParticipantBalance.toUint64();
+        participantState.balance = newParticipantBalance.toUint64();
         sharedWallet.sharedBalance = newWalletBalance.toUint64();
     }
 
@@ -529,8 +531,8 @@ contract SharedWalletController is
         for (uint256 i = 0; i < participantCount; ++i) {
             if (shares[i] > 0) {
                 address participant = sharedWallet.participants[i];
-                ParticipantState storage state = sharedWallet.participantStates[participant];
-                uint256 oldParticipantBalance = state.balance;
+                ParticipantState storage participantState = sharedWallet.participantStates[participant];
+                uint256 oldParticipantBalance = participantState.balance;
                 uint256 newParticipantBalance;
                 
                 if (transferKind == uint256(TransferKind.Receiving)) {
@@ -560,7 +562,7 @@ contract SharedWalletController is
                     );
                 }
 
-                state.balance = newParticipantBalance.toUint64();
+                participantState.balance = newParticipantBalance.toUint64();
             }
         }
     }
