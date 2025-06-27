@@ -352,6 +352,9 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
  */
 interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     // ------------------ Errors ---------------------------------- //
+    /// @dev Thrown if the aggregated balance across all shared wallets exceeds the limit.
+    error SharedWalletController_AggregatedBalanceExcess();
+
     /// @dev Thrown if the provided implementation address is invalid.
     error SharedWalletController_ImplementationAddressInvalid();
 
@@ -387,6 +390,9 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
 
     /// @dev Thrown if the provided wallet address is zero.
     error SharedWalletController_WalletAddressZero();
+
+    /// @dev Thrown if the number of existing shared wallets exceeds the limit.
+    error SharedWalletController_WalletCountExcess();
 
     /// @dev Thrown if the provided wallet already exists.
     error SharedWalletController_WalletExistentAlready();

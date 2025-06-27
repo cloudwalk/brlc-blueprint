@@ -110,6 +110,7 @@ contract SharedWalletController is
         }
 
         sharedWallet.status = WalletStatus.Active;
+        _increaseWalletCount();
         emit WalletCreated(wallet);
 
         for (uint256 i = 0; i < participants.length; i++) {
@@ -465,6 +466,7 @@ contract SharedWalletController is
         if (transferKind == uint256(TransferKind.Receiving)) {
             newParticipantBalance = oldParticipantBalance + amount;
             newWalletBalance = oldWalletBalance + amount;
+            _increaseAggregatedBalance(amount);
 
             emit Deposit(
                 wallet,
@@ -483,6 +485,7 @@ contract SharedWalletController is
             }
             newParticipantBalance = oldParticipantBalance - amount;
             newWalletBalance = oldWalletBalance - amount;
+            _getSharedWalletControllerStorage().aggregatedBalance -= uint64(amount);
 
             emit Withdrawal(
                 wallet,
@@ -510,11 +513,13 @@ contract SharedWalletController is
         uint256 newWalletBalance;
         if (transferKind == uint256(TransferKind.Receiving)) {
             newWalletBalance = oldWalletBalance + amount;
+            _increaseAggregatedBalance(amount);
         } else {
             if (oldWalletBalance < amount) {
                 revert SharedWalletController_WalletBalanceInsufficient();
             }
             newWalletBalance = oldWalletBalance - amount;
+            _getSharedWalletControllerStorage().aggregatedBalance -= uint64(amount);
         }
         uint256[] memory shares = _determineShares(amount, sharedWallet);
         uint256 participantCount = sharedWallet.participants.length;
@@ -558,6 +563,25 @@ contract SharedWalletController is
                 state.balance = newParticipantBalance.toUint64();
             }
         }
+    }
+
+    /**
+     * @dev Increases the number of existing shared wallets by 1.
+     */
+    function _increaseWalletCount() internal {
+        uint256 newWalletCount = _getSharedWalletControllerStorage().walletCount + 1;
+        if (newWalletCount > type(uint32).max) revert SharedWalletController_WalletCountExcess();
+        _getSharedWalletControllerStorage().walletCount = uint32(newWalletCount);
+    }
+
+    /**
+     * @dev Increases the aggregated balance across all shared wallets by the given amount.
+     * @param amount The amount to increase the total balance by.
+     */
+    function _increaseAggregatedBalance(uint256 amount) internal {
+        uint256 newTotalWalletBalance = _getSharedWalletControllerStorage().aggregatedBalance + uint64(amount);
+        if (newTotalWalletBalance > type(uint64).max) revert SharedWalletController_AggregatedBalanceExcess();
+        _getSharedWalletControllerStorage().aggregatedBalance = uint64(newTotalWalletBalance);
     }
 
     /**
