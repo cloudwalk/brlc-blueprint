@@ -34,12 +34,12 @@ interface ISharedWalletControllerTypes {
      *
      * The values:
      *
-     * - Nonexistent = 0 -- The participant with the provided address does not exist in the wallet (the default value).
-     * - Active = 1 ------- The participant is a part of the wallet.
+     * - NonRegistered = 0 -- The participant with the provided address is not registered in the shared wallet.
+     * - Registered = 1 ----- The participant is registered in the shared wallet.
      */
     enum ParticipantStatus {
-        Nonexistent,
-        Active
+        NonRegistered,
+        Registered
     }
 
     /**
@@ -372,11 +372,11 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     /// @dev Thrown if during the operation the number of participants in the wallet exceeds the limit.
     error SharedWalletController_ParticipantCountExcess();
 
-    /// @dev Thrown if the provided participant already exists.
-    error SharedWalletController_ParticipantExistentAlready();
+    /// @dev Thrown if the provided participant is NOT registered in the shared wallet.
+    error SharedWalletController_ParticipantNonRegistered(address participant);
 
-    /// @dev Thrown if the provided participant does not exist.
-    error SharedWalletController_ParticipantNonexistent(address participant);
+    /// @dev Thrown if the provided participant is already registered in the shared wallet.
+    error SharedWalletController_ParticipantRegisteredAlready();
 
     /// @dev Thrown if the provided participant is a shared wallet.
     error SharedWalletController_ParticipantIsSharedWallet();

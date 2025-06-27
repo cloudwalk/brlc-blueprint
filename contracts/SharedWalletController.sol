@@ -290,7 +290,7 @@ contract SharedWalletController is
      */
     function getParticipantBalance(address wallet, address participant) external view returns (uint256) {
         ParticipantState storage state = _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant];
-        if (state.status == ParticipantStatus.Active) {
+        if (state.status == ParticipantStatus.Registered) {
             return state.balance;
         } else {
             return 0;
@@ -315,7 +315,7 @@ contract SharedWalletController is
      * @inheritdoc ISharedWalletControllerPrimary
      */
     function isParticipant(address wallet, address participant) external view returns (bool) {
-        return _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant].status == ParticipantStatus.Active;
+        return _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant].status == ParticipantStatus.Registered;
     }
 
     // ------------------ Pure functions -------------------------- //
@@ -336,8 +336,8 @@ contract SharedWalletController is
     ) internal {
         if (participant == address(0)) revert SharedWalletController_ParticipantAddressZero();
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
-        if (sharedWallet.participantStates[participant].status != ParticipantStatus.Nonexistent) {
-            revert SharedWalletController_ParticipantExistentAlready();
+        if (sharedWallet.participantStates[participant].status != ParticipantStatus.NonRegistered) {
+            revert SharedWalletController_ParticipantRegisteredAlready();
         }
         if(_getSharedWalletControllerStorage().wallets[participant].status != WalletStatus.Nonexistent) {
             revert SharedWalletController_ParticipantIsSharedWallet();
@@ -349,7 +349,7 @@ contract SharedWalletController is
         uint256 participantIndex = sharedWallet.participants.length;
         sharedWallet.participants.push(participant);
         ParticipantState storage state = sharedWallet.participantStates[participant];
-        state.status = ParticipantStatus.Active;
+        state.status = ParticipantStatus.Registered;
         state.index = uint16(participantIndex);
         state.balance = 0;
         _getSharedWalletControllerStorage().participantWallets[participant].add(wallet);
@@ -368,8 +368,8 @@ contract SharedWalletController is
         bool prohibitInitiatorRemoval
     ) internal {
         SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
-        if (sharedWallet.participantStates[participant].status == ParticipantStatus.Nonexistent) {
-            revert SharedWalletController_ParticipantNonexistent(participant);
+        if (sharedWallet.participantStates[participant].status == ParticipantStatus.NonRegistered) {
+            revert SharedWalletController_ParticipantNonRegistered(participant);
         }
         if (sharedWallet.participantStates[participant].balance > 0) {
             revert SharedWalletController_ParticipantBalanceNonzero(participant);
@@ -423,7 +423,7 @@ contract SharedWalletController is
      * @param amount The amount of the transfer.
      */
     function _handleTransferFromWallet(address wallet, address to, uint256 amount) internal {
-        if (_getSharedWalletControllerStorage().wallets[wallet].participantStates[to].status == ParticipantStatus.Active) {
+        if (_getSharedWalletControllerStorage().wallets[wallet].participantStates[to].status == ParticipantStatus.Registered) {
             _processFunding(wallet, to, amount, uint256(TransferKind.Spending));
         } else {
             _processTransfer(wallet, amount, uint256(TransferKind.Spending));
@@ -437,7 +437,7 @@ contract SharedWalletController is
      * @param amount The amount of the transfer.
      */
     function _handleTransferToWallet(address from, address wallet, uint256 amount) internal {
-        if (_getSharedWalletControllerStorage().wallets[wallet].participantStates[from].status == ParticipantStatus.Active) {
+        if (_getSharedWalletControllerStorage().wallets[wallet].participantStates[from].status == ParticipantStatus.Registered) {
             _processFunding(wallet, from, amount, uint256(TransferKind.Receiving));
         } else {
             _processTransfer(wallet, amount, uint256(TransferKind.Receiving));
