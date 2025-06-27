@@ -43,25 +43,6 @@ interface ISharedWalletControllerTypes {
     }
 
     /**
-     * @dev Possible operations with the balance in a shared wallet.
-     *
-     * The values:
-     *
-     * - Unknown = 0 ------ The operation is unknown (the default value).
-     * - Deposit = 1 ------ A participant has deposited tokens to the wallet.
-     * - Withdrawal = 2 --- A participant has withdrawn tokens from the wallet.
-     * - TransferIn = 3 --- Tokens have been transferred to the wallet and distributed proportionally among participants.
-     * - TransferOut = 4 -- Tokens have been transferred from the wallet and distributed proportionally among participants.
-     */
-    enum BalanceOperationKind {
-        Unknown,
-        Deposit,
-        Withdrawal,
-        TransferIn,
-        TransferOut
-    }
-
-    /**
      * @dev The state of a participant within a shared wallet to store in the contract.
      *
      * The fields:
@@ -191,18 +172,86 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
      */
     event ParticipantRemoved(address indexed wallet, address indexed participant);
 
+    // NOTE: The wallet balance operation events have been split into separate ones because it simplifies them,
+    //       makes them more readable, adds granularity. If we need to fetch the whole history of operations,
+    //       we can use a query like the following in the database:
+    //       ```sql
+    //       SELECT * FROM logs
+    //       WHERE logs.first_topic IN (<deposit_hash>, <withdrawal_hash>, <transfer_in_hash>, <transfer_out_hash>)
+    //       ```
+
     /**
-     * @dev Emitted when the balance of a participant in a wallet is changed.
+     * @dev Emitted when a participant has deposited tokens to the wallet.
      * @param wallet The address of the wallet.
      * @param participant The address of the participant.
-     * @param kind The kind of operation.
      * @param newParticipantBalance The new balance of the participant.
+     * @param oldParticipantBalance The old balance of the participant.
+     * @param newWalletBalance The new balance of the wallet.
+     * @param oldWalletBalance The old balance of the wallet.
      */
-    event WalletBalanceOperation(
+    event Deposit(
         address indexed wallet,
         address indexed participant,
-        // TODO: use type uint256 for enum fields?
-        BalanceOperationKind indexed kind,
+        uint256 newParticipantBalance,
+        uint256 oldParticipantBalance,
+        uint256 newWalletBalance,
+        uint256 oldWalletBalance
+    );
+
+    /**
+     * @dev Emitted when a participant has withdrawn tokens from the wallet.
+     * @param wallet The address of the wallet.
+     * @param participant The address of the participant.
+     * @param newParticipantBalance The new balance of the participant.
+     * @param oldParticipantBalance The old balance of the participant.
+     * @param newWalletBalance The new balance of the wallet.
+     * @param oldWalletBalance The old balance of the wallet.
+     */
+    event Withdrawal(
+        address indexed wallet,
+        address indexed participant,
+        uint256 newParticipantBalance,
+        uint256 oldParticipantBalance,
+        uint256 newWalletBalance,
+        uint256 oldWalletBalance
+    );
+
+    /**
+     * @dev Emitted when tokens have been transferred to the wallet with distribution among participants.
+     *
+     * This event is emitted for each participant in the wallet that balance has been changed.
+     *
+     * @param wallet The address of the wallet.
+     * @param participant The address of the participant.
+     * @param newParticipantBalance The new balance of the participant.
+     * @param oldParticipantBalance The old balance of the participant.
+     * @param newWalletBalance The new balance of the wallet.
+     * @param oldWalletBalance The old balance of the wallet.
+     */
+    event TransferIn(
+        address indexed wallet,
+        address indexed participant,
+        uint256 newParticipantBalance,
+        uint256 oldParticipantBalance,
+        uint256 newWalletBalance,
+        uint256 oldWalletBalance
+    );
+
+    /**
+     * @dev Emitted when tokens have been transferred from the wallet with distribution among participants.
+     *
+     * This event is emitted for each participant in the wallet that balance has been changed.
+     *
+     * @param wallet The address of the wallet.
+     * @param participant The address of the participant.
+     * @param newParticipantBalance The new balance of the participant.
+     * @param oldParticipantBalance The old balance of the participant.
+     * @param newWalletBalance The new balance of the wallet.
+     * @param oldWalletBalance The old balance of the wallet.
+     */
+    event TransferOut(
+        address indexed wallet,
+        address indexed participant,
         uint256 newParticipantBalance,
         uint256 oldParticipantBalance,
         uint256 newWalletBalance,

@@ -465,6 +465,15 @@ contract SharedWalletController is
         if (transferKind == uint256(TransferKind.Receiving)) {
             newParticipantBalance = oldParticipantBalance + amount;
             newWalletBalance = oldWalletBalance + amount;
+
+            emit Deposit(
+                wallet,
+                participant,
+                newParticipantBalance,
+                oldParticipantBalance,
+                newWalletBalance,
+                oldWalletBalance
+            );
         } else {
             if (oldWalletBalance < amount) {
                 revert SharedWalletController_WalletBalanceInsufficient();
@@ -474,22 +483,19 @@ contract SharedWalletController is
             }
             newParticipantBalance = oldParticipantBalance - amount;
             newWalletBalance = oldWalletBalance - amount;
+
+            emit Withdrawal(
+                wallet,
+                participant,
+                newParticipantBalance,
+                oldParticipantBalance,
+                newWalletBalance,
+                oldWalletBalance
+            );
         }
 
         state.balance = newParticipantBalance.toUint64();
         sharedWallet.sharedBalance = newWalletBalance.toUint64();
-
-        emit WalletBalanceOperation(
-            wallet,
-            participant,
-            transferKind == uint256(TransferKind.Receiving)
-                ? BalanceOperationKind.Deposit
-                : BalanceOperationKind.Withdrawal,
-            newParticipantBalance,
-            oldParticipantBalance,
-            newWalletBalance,
-            oldWalletBalance
-        );
     }
 
     /**
@@ -520,22 +526,36 @@ contract SharedWalletController is
                 address participant = sharedWallet.participants[i];
                 ParticipantState storage state = sharedWallet.participantStates[participant];
                 uint256 oldParticipantBalance = state.balance;
-                uint256 newParticipantBalance = (transferKind == uint256(TransferKind.Receiving))
-                    ? oldWalletBalance + shares[i]
-                    : oldWalletBalance - shares[i];
-                state.balance = newParticipantBalance.toUint64();
+                uint256 newParticipantBalance;
+                
+                if (transferKind == uint256(TransferKind.Receiving)) {
+                    newParticipantBalance = oldParticipantBalance + shares[i];
 
-                emit WalletBalanceOperation(
-                    wallet,
-                    participant,
-                    transferKind == uint256(TransferKind.Receiving)
-                        ? BalanceOperationKind.TransferIn
-                        : BalanceOperationKind.TransferOut,
-                    newParticipantBalance,
-                    oldParticipantBalance,
-                    newWalletBalance,
-                    oldWalletBalance
-                );
+                    emit TransferIn(
+                        wallet,
+                        participant,
+                        newParticipantBalance,
+                        oldParticipantBalance,
+                        newWalletBalance,
+                        oldWalletBalance
+                    );
+                } else {
+                    if (oldParticipantBalance < shares[i]) {
+                        revert SharedWalletController_ParticipantBalanceInsufficient();
+                    }
+                    newParticipantBalance = oldParticipantBalance - shares[i];
+
+                    emit TransferOut(
+                        wallet,
+                        participant,
+                        newParticipantBalance,
+                        oldParticipantBalance,
+                        newWalletBalance,
+                        oldWalletBalance
+                    );
+                }
+
+                state.balance = newParticipantBalance.toUint64();
             }
         }
     }
