@@ -27,10 +27,10 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
 
     /**
      * @dev The storage location for the shared wallet controller.
-     * 
+     *
      * See: ERC-7201 "Namespaced Storage Layout" for more details.
-     * 
-     * The value is the same as: 
+     *
+     * The value is the same as:
      *
      * ```solidity
      * string memory id = "cloudwalk.storage.SharedWalletController";

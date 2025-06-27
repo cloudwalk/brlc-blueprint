@@ -52,7 +52,7 @@ contract SharedWalletController is
      * @dev Possible policies for the initiator removal from a shared wallet for internal use.
      *
      * The initiator is the first participant (index 0) of a shared wallet.
-     * 
+     *
      * The values:
      *
      * - Prohibit = 0 -- The initiator cannot be removed from the wallet.
@@ -373,7 +373,7 @@ contract SharedWalletController is
         if (participantState.status != ParticipantStatus.NonRegistered) {
             revert SharedWalletController_ParticipantRegisteredAlready();
         }
-        if(_getSharedWalletControllerStorage().wallets[participant].status != WalletStatus.Nonexistent) {
+        if (_getSharedWalletControllerStorage().wallets[participant].status != WalletStatus.Nonexistent) {
             revert SharedWalletController_ParticipantIsSharedWallet();
         }
         if (sharedWallet.participants.length >= _getMaxParticipantsPerWallet()) {
@@ -438,9 +438,9 @@ contract SharedWalletController is
 
     /**
      * @dev Returns the maximum number of participants per wallet.
-     * 
+     *
      * This function is useful for testing purposes.
-     * 
+     *
      * @return The maximum number of participants per wallet.
      */
     function _getMaxParticipantsPerWallet() internal pure virtual returns (uint256) {
@@ -525,7 +525,7 @@ contract SharedWalletController is
             if (oldParticipantBalance < amount) {
                 revert SharedWalletController_ParticipantBalanceInsufficient();
             }
-            unchecked{
+            unchecked {
                 newParticipantBalance = oldParticipantBalance - amount;
                 newWalletBalance = oldWalletBalance - amount;
                 _getSharedWalletControllerStorage().aggregatedBalance -= uint64(amount);
@@ -562,7 +562,7 @@ contract SharedWalletController is
             if (oldWalletBalance < amount) {
                 revert SharedWalletController_WalletBalanceInsufficient();
             }
-            unchecked{
+            unchecked {
                 newWalletBalance = oldWalletBalance - amount;
                 _getSharedWalletControllerStorage().aggregatedBalance -= uint64(amount);
             }
@@ -577,7 +577,7 @@ contract SharedWalletController is
                 ParticipantState storage participantState = sharedWallet.participantStates[participant];
                 uint256 oldParticipantBalance = participantState.balance;
                 uint256 newParticipantBalance;
-                
+
                 if (transferKind == uint256(TransferKind.In)) {
                     newParticipantBalance = oldParticipantBalance + shares[i];
 
