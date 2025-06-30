@@ -111,16 +111,16 @@ interface ISharedWalletControllerTypes {
      * The fields:
      *
      * - wallet ------- The address of the shared wallet.
+     * - participant -- The address of the participant.
      * - status ------- The status of the participant according to the {ParticipantStatus} enum.
      * - index -------- The index of the participant address in the shared wallet.
-     * - participant -- The address of the participant.
      * - balance ------ The balance of the participant in the shared wallet.
      */
     struct ParticipantStateView {
+        address participant;
         address wallet;
         ParticipantStatus status;
-        uint16 index;
-        address participant;
+        uint256 index;
         uint256 balance;
     }
 }
