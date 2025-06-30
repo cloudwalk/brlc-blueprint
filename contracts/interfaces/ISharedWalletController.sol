@@ -15,18 +15,18 @@ interface ISharedWalletControllerTypes {
      *
      * - Nonexistent = 0 -- The shared wallet with the provided address does not exist (the default value).
      * - Active = 1 ------- The shared wallet is active.
-     * - Deactivated = 2 -- The shared wallet is deactivated.
+     * - Suspended = 2 ---- The shared wallet is suspended.
      *
      * Notes:
      *
-     *  - 1. Any transfers to or from a deactivated wallet will cause the transaction to revert.
-     *  - 2. Only a wallet with the zero balance can be deactivated.
-     *  - 3. It is not possible to reactivate a deactivated wallet.
+     *  - 1. Any transfers to or from a suspended wallet will cause the transaction to revert.
+     *  - 2. Only a wallet with the zero balance can be suspended.
+     *  - 3. A suspended wallet can be resumed to become active again.
      */
     enum WalletStatus {
         Nonexistent,
         Active,
-        Deactivated
+        Suspended
     }
 
     /**
@@ -65,14 +65,14 @@ interface ISharedWalletControllerTypes {
      * The fields:
      *
      * - status ------------- The status of the wallet according to the {WalletStatus} enum.
-     * - sharedBalance ------ The balance of the wallet that is shared among participants.
+     * - totalBalance ------- The balance of the wallet that is shared among participants.
      * - participants ------- The addresses of the participants in the wallet.
      * - participantStates -- The states of the participants in the wallet.
      */
     struct SharedWallet {
         // Slot 1
         WalletStatus status;
-        uint64 sharedBalance;
+        uint64 totalBalance;
         // uint184__reserved; // Reserved for future use until the end of the storage slot
 
         // Slot 2
@@ -85,7 +85,7 @@ interface ISharedWalletControllerTypes {
     }
 
     /**
-     * @dev A pair of a wallet and a participant to use as a parameter of a view function.
+     * @dev A struct containing a pair of a wallet and a participant to use as a parameter of a view function.
      *
      * The fields:
      *
@@ -106,7 +106,7 @@ interface ISharedWalletControllerTypes {
     }
 
     /**
-     * @dev A view of a participant within a shared wallet to use as a return value of a view function.
+     * @dev A struct containing detailed information about a participant within a shared wallet.
      *
      * The fields:
      *
@@ -116,7 +116,7 @@ interface ISharedWalletControllerTypes {
      * - participant -- The address of the participant.
      * - balance ------ The balance of the participant in the shared wallet.
      */
-    struct ParticipantStateView {
+    struct WalletParticipantDetails {
         address wallet;
         ParticipantStatus status;
         uint16 index;
@@ -140,22 +140,22 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     event WalletCreated(address indexed wallet);
 
     /**
-     * @dev Emitted when a shared wallet is deactivated.
-     * @param wallet The address of the deactivated wallet.
+     * @dev Emitted when a shared wallet is suspended.
+     * @param wallet The address of the suspended wallet.
      */
-    event WalletDeactivated(address indexed wallet);
+    event WalletSuspended(address indexed wallet);
 
     /**
-     * @dev Emitted when a shared wallet is activated after being deactivated.
-     * @param wallet The address of the activated wallet.
+     * @dev Emitted when a shared wallet is resumed after being suspended.
+     * @param wallet The address of the resumed wallet.
      */
-    event WalletActivated(address indexed wallet);
+    event WalletResumed(address indexed wallet);
 
     /**
-     * @dev Emitted when a deactivated shared wallet is removed.
-     * @param wallet The address of the removed wallet.
+     * @dev Emitted when a suspended shared wallet is deleted.
+     * @param wallet The address of the deleted wallet.
      */
-    event WalletRemoved(address indexed wallet);
+    event WalletDeleted(address indexed wallet);
 
     /**
      * @dev Emitted when a participant is added to a shared wallet.
@@ -218,7 +218,7 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     /**
      * @dev Emitted when tokens have been transferred to a shared wallet with distribution among participants.
      *
-     * This event is emitted for each participant in the wallet that balance has been changed.
+     * This event is emitted for each participant in the wallet whose balance has been changed.
      *
      * @param wallet The address of the shared wallet.
      * @param participant The address of the participant.
@@ -239,7 +239,7 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     /**
      * @dev Emitted when tokens have been transferred from a shared wallet with distribution among participants.
      *
-     * This event is emitted for each participant in the wallet that balance has been changed.
+     * This event is emitted for each participant in the wallet whose balance has been changed.
      *
      * @param wallet The address of the shared wallet.
      * @param participant The address of the participant.
@@ -267,22 +267,22 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     function createWallet(address wallet, address[] calldata participants) external;
 
     /**
-     * @dev Deactivates a shared wallet.
-     * @param wallet The address of the shared wallet to deactivate.
+     * @dev Suspends a shared wallet.
+     * @param wallet The address of the shared wallet to suspend.
      */
-    function deactivateWallet(address wallet) external;
+    function suspendWallet(address wallet) external;
 
     /**
-     * @dev Activates a shared wallet that was previously deactivated.
-     * @param wallet The address of the shared wallet to activate.
+     * @dev Resumes a shared wallet that was previously suspended.
+     * @param wallet The address of the shared wallet to resume.
      */
-    function activateWallet(address wallet) external;
+    function resumeWallet(address wallet) external;
 
     /**
-     * @dev Removes a shared wallet and all its participants. The result state is the same as if the wallet was never created.
-     * @param wallet The address of the shared wallet to remove.
+     * @dev Deletes a shared wallet and all its participants. The result state is the same as if the wallet was never created.
+     * @param wallet The address of the shared wallet to delete.
      */
-    function removeWallet(address wallet) external;
+    function deleteWallet(address wallet) external;
 
     /**
      * @dev Adds participants to a shared wallet.
@@ -301,17 +301,17 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     // ------------------ View functions --------------------------- //
 
     /**
-     * @dev Returns the states of the participants in the shared wallets.
+     * @dev Returns participant details for specified wallet-participant pairs.
      *
-     * A wildcard can be used in the input pairs to get the states for all participants or all wallets,
-     * see details in the {WalletParticipantPair} struct.
+     * Supports wildcards: use zero wallet address to get all wallets for a participant,
+     * or zero participant address to get all participants for a wallet.
      *
-     * @param participantWalletPairs The pairs of wallets and participants to get the states for.
-     * @return participantStates The states of the participants in the wallets.
+     * @param pairs The wallet-participant pairs to get the details for.
+     * @return details The wallet-participant details for the provided pairs.
      */
-    function getParticipantStates(
-        WalletParticipantPair[] calldata participantWalletPairs
-    ) external view returns (ParticipantStateView[] memory participantStates);
+    function getParticipantDetails(
+        WalletParticipantPair[] calldata pairs
+    ) external view returns (WalletParticipantDetails[] memory details);
 
     /**
      * @dev Returns the shared wallets that a participant is a part of.
@@ -325,7 +325,7 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
      * @param wallet The address of the shared wallet.
      * @return participants The addresses of all participants of the shared wallet.
      */
-    function getParticipants(address wallet) external view returns (address[] memory participants);
+    function getWalletParticipants(address wallet) external view returns (address[] memory participants);
 
     /**
      * @dev Returns the balance of a participant in a shared wallet.
@@ -341,7 +341,7 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
      * @param participant The address of the participant to check.
      * @return True if the participant is in the shared wallet, false otherwise.
      */
-    function isParticipant(address wallet, address participant) external view returns (bool);
+    function isWalletParticipant(address wallet, address participant) external view returns (bool);
 
     /**
      * @dev Returns the number of existing shared wallets.
@@ -350,10 +350,10 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     function getWalletCount() external view returns (uint256);
 
     /**
-     * @dev Returns the aggregated balance across all shared wallets.
-     * @return The aggregated balance across all shared wallets.
+     * @dev Returns the combined balance across all shared wallets.
+     * @return The combined balance across all shared wallets.
      */
-    function getAggregatedBalance() external view returns (uint256);
+    function getCombinedWalletsBalance() external view returns (uint256);
 }
 
 /**
@@ -362,8 +362,8 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
  * @dev The errors of the shared wallet controller smart contract.
  */
 interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
-    /// @dev Thrown if the aggregated balance across all shared wallets exceeds the limit.
-    error SharedWalletController_AggregatedBalanceExcess();
+    /// @dev Thrown if the combined wallets balance across all shared wallets exceeds the limit.
+    error SharedWalletController_CombinedWalletsBalanceExcess();
 
     /// @dev Thrown if the implementation address provided for the contract upgrade is invalid.
     error SharedWalletController_ImplementationAddressInvalid();
