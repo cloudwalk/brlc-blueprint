@@ -48,7 +48,7 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
      * - token ------------------- The address of the ERC20 token that is used in the shared wallets.
      * - walletCount ------------- The number of existing shared wallets.
      * - combinedWalletsBalance -- The combined balance across all shared wallets.
-     * - wallets ----------------- The mapping of a shared wallet for a given wallet address.
+     * - walletStates ------------ The mapping of a shared wallet state for a given wallet address.
      * - participantWallets ------ The mapping of a set of wallets for a given participant address.
      *
      * @custom:storage-location erc7201:cloudwalk.storage.SharedWalletController
@@ -61,7 +61,7 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
         // No reserve until the end of the storage slot
 
         // Slot 2
-        mapping(address wallet => WalletState) wallets;
+        mapping(address wallet => WalletState) walletStates;
         // No reserve until the end of the storage slot
 
         // Slot 3

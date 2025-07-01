@@ -9,6 +9,31 @@ pragma solidity ^0.8.0;
  */
 interface ISharedWalletControllerTypes {
     /**
+     * @dev The data of a shared wallet to store in the contract.
+     *
+     * The fields:
+     *
+     * - status ------------- The status of the wallet according to the {WalletStatus} enum.
+     * - balance ------------ The balance of the wallet that is shared among participants.
+     * - participants ------- The addresses of the participants in the wallet.
+     * - participantStates -- The states of the participants in the wallet.
+     */
+    struct WalletState {
+        // Slot 1
+        WalletStatus status;
+        uint64 balance;
+        // uint184__reserved; // Reserved for future use until the end of the storage slot
+
+        // Slot 2
+        address[] participants;
+        // No reserve until the end of the storage slot
+
+        // Slot 3
+        mapping(address participant => ParticipantState) participantStates;
+        // No reserve until the end of the storage slot
+    }
+
+    /**
      * @dev Possible statuses of a shared wallet.
      *
      * The values:
@@ -26,20 +51,7 @@ interface ISharedWalletControllerTypes {
     enum WalletStatus {
         Nonexistent,
         Active,
-        Suspended
-    }
-
-    /**
-     * @dev Possible statuses of a participant in a shared wallet.
-     *
-     * The values:
-     *
-     * - NonRegistered = 0 -- The participant with the provided address is not registered in the shared wallet.
-     * - Registered = 1 ----- The participant is registered in the shared wallet.
-     */
-    enum ParticipantStatus {
-        NonRegistered,
-        Registered
+        Suspended // Add Deleted state? How would it work?
     }
 
     /**
@@ -60,28 +72,16 @@ interface ISharedWalletControllerTypes {
     }
 
     /**
-     * @dev The data of a shared wallet to store in the contract.
+     * @dev Possible statuses of a participant in a shared wallet.
      *
-     * The fields:
+     * The values:
      *
-     * - status ------------- The status of the wallet according to the {WalletStatus} enum.
-     * - totalBalance ------- The balance of the wallet that is shared among participants.
-     * - participants ------- The addresses of the participants in the wallet.
-     * - participantStates -- The states of the participants in the wallet.
+     * - NonRegistered = 0 -- The participant with the provided address is not registered in the shared wallet.
+     * - Registered = 1 ----- The participant is registered in the shared wallet.
      */
-    struct WalletState {
-        // Slot 1
-        WalletStatus status;
-        uint64 totalBalance;
-        // uint184__reserved; // Reserved for future use until the end of the storage slot
-
-        // Slot 2
-        address[] participants;
-        // No reserve until the end of the storage slot
-
-        // Slot 3
-        mapping(address participant => ParticipantState) participantStates;
-        // No reserve until the end of the storage slot
+    enum ParticipantStatus {
+        NonRegistered,
+        Registered
     }
 
     /**
@@ -181,7 +181,7 @@ interface ISharedWalletControllerTypes {
      * - participantStatus --- The status of the participant according to the {ParticipantStatus} enum.
      * - participantBalance -- The balance of the participant in the shared wallet.
      */
-    struct RelationshipOverview {
+    struct WalletParticipantOverview {
         // Wallet information
         address wallet;
         WalletStatus walletStatus;
@@ -369,19 +369,20 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     // ------------------ View functions --------------------------- //
 
     /**
-     * @dev Returns detailed information for wallet-participant relationships.
-     *
-     * Wildcard support:
-     * - Use zero wallet address to get all wallets for a participant;
-     * - Use zero participant address to get all participants for a wallet;
-     * - Specify both addresses for exact pair information.
-     *
-     * @param pairs The wallet-participant pairs to get details for (supports wildcards).
-     * @return overviews The detailed information for each resolved pair after wildcard expansion.
+     * @dev Checks if a participant is in a shared wallet.
+     * @param wallet The address of the shared wallet to check.
+     * @param participant The address of the participant to check.
+     * @return True if the participant is in the shared wallet, false otherwise.
      */
-    function getRelationshipOverviews(
-        WalletParticipantPair[] calldata pairs
-    ) external view returns (RelationshipOverview[] memory overviews);
+    function isParticipant(address wallet, address participant) external view returns (bool);
+
+    /**
+     * @dev Returns the balance of a participant in a shared wallet.
+     * @param wallet The address of the shared wallet to get the balance of.
+     * @param participant The address of the participant to get the balance of.
+     * @return balance The balance of the participant in the shared wallet.
+     */
+    function getParticipantBalance(address wallet, address participant) external view returns (uint256 balance);
 
     /**
      * @dev Returns the shared wallets that a participant is a part of.
@@ -412,20 +413,19 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     function getWalletOverviews(address[] calldata wallets) external view returns (WalletOverview[] memory overviews);
 
     /**
-     * @dev Returns the balance of a participant in a shared wallet.
-     * @param wallet The address of the shared wallet to get the balance of.
-     * @param participant The address of the participant to get the balance of.
-     * @return balance The balance of the participant in the shared wallet.
+     * @dev Returns detailed information for wallet-participant relationships.
+     *
+     * Wildcard support:
+     * - Use zero wallet address to get all wallets for a participant;
+     * - Use zero participant address to get all participants for a wallet;
+     * - Specify both addresses for exact pair information.
+     *
+     * @param pairs The wallet-participant pairs to get details for (supports wildcards).
+     * @return overviews The detailed information for each resolved pair after wildcard expansion.
      */
-    function getParticipantBalance(address wallet, address participant) external view returns (uint256 balance);
-
-    /**
-     * @dev Checks if a participant is in a shared wallet.
-     * @param wallet The address of the shared wallet to check.
-     * @param participant The address of the participant to check.
-     * @return True if the participant is in the shared wallet, false otherwise.
-     */
-    function isWalletParticipant(address wallet, address participant) external view returns (bool);
+    function getRelationshipOverviews(
+        WalletParticipantPair[] calldata pairs
+    ) external view returns (WalletParticipantOverview[] memory overviews);
 
     /**
      * @dev Returns the number of existing shared wallets.

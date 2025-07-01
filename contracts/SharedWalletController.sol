@@ -134,7 +134,7 @@ contract SharedWalletController is
         if (walletState.status != WalletStatus.Active) {
             revert SharedWalletController_WalletStatusIncompatible(walletState.status, WalletStatus.Active);
         }
-        if (walletState.totalBalance > 0) revert SharedWalletController_WalletBalanceNonzero();
+        if (walletState.balance > 0) revert SharedWalletController_WalletBalanceNonzero();
         walletState.status = WalletStatus.Suspended;
         emit WalletSuspended(wallet);
     }
@@ -260,14 +260,14 @@ contract SharedWalletController is
         }
         if (amount == 0) return;
 
-        WalletStatus status = _getSharedWalletControllerStorage().wallets[from].status;
+        WalletStatus status = _getSharedWalletControllerStorage().walletStates[from].status;
         if (status == WalletStatus.Active) {
             _handleOutgoingTransfer(from, to, amount);
         } else if (status == WalletStatus.Suspended) {
             revert SharedWalletController_WalletStatusIncompatible(status, WalletStatus.Active);
         }
 
-        status = _getSharedWalletControllerStorage().wallets[to].status;
+        status = _getSharedWalletControllerStorage().walletStates[to].status;
         if (status == WalletStatus.Active) {
             _handleIncomingTransfer(from, to, amount);
         } else if (status == WalletStatus.Suspended) {
@@ -279,41 +279,16 @@ contract SharedWalletController is
 
     /**
      * @inheritdoc ISharedWalletControllerPrimary
-     *
-     * @dev Requirements:
-     *
-     * - Both wallet and participant addresses cannot be zero in the same pair.
      */
-    function getRelationshipOverviews(
-        WalletParticipantPair[] calldata pairs
-    ) external view returns (RelationshipOverview[] memory overviews) {
-        WalletParticipantPair[] memory normalizedPairs = _normalizeWalletParticipantPairs(pairs);
-        uint256 count = normalizedPairs.length;
-        overviews = new RelationshipOverview[](count);
-        for (uint256 i = 0; i < count; i++) {
-            address wallet = normalizedPairs[i].wallet;
-            address participant = normalizedPairs[i].participant;
-            WalletState storage walletState = _getSharedWalletControllerStorage().wallets[wallet];
-            ParticipantState storage participantState = walletState.participantStates[participant];
-
-            overviews[i] = RelationshipOverview({
-                // Wallet information
-                wallet: wallet,
-                walletStatus: walletState.status,
-                walletBalance: walletState.totalBalance,
-                // Participant information
-                participant: participant,
-                participantStatus: participantState.status,
-                participantBalance: participantState.balance
-            });
-        }
+    function isParticipant(address wallet, address participant) external view returns (bool) {
+        return _getSharedWalletControllerStorage().walletStates[wallet].participantStates[participant].status == ParticipantStatus.Registered;
     }
 
     /**
      * @inheritdoc ISharedWalletControllerPrimary
      */
     function getParticipantBalance(address wallet, address participant) external view returns (uint256) {
-        return _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant].balance;
+        return _getSharedWalletControllerStorage().walletStates[wallet].participantStates[participant].balance;
     }
 
     /**
@@ -321,69 +296,6 @@ contract SharedWalletController is
      */
     function getParticipantWallets(address participant) external view returns (address[] memory wallets) {
         return _getSharedWalletControllerStorage().participantWallets[participant].values();
-    }
-
-    /**
-     * @inheritdoc ISharedWalletControllerPrimary
-     */
-    function getWalletParticipants(address wallet) external view returns (address[] memory participants) {
-        return _getSharedWalletControllerStorage().wallets[wallet].participants;
-    }
-
-    /**
-     * @inheritdoc ISharedWalletControllerPrimary
-     */
-    function isWalletParticipant(address wallet, address participant) external view returns (bool) {
-        return _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant].status == ParticipantStatus.Registered;
-    }
-
-    /**
-     * @inheritdoc ISharedWalletControllerPrimary
-     */
-    function getWalletCount() external view returns (uint256) {
-        return _getSharedWalletControllerStorage().walletCount;
-    }
-
-    /**
-     * @inheritdoc ISharedWalletControllerPrimary
-     */
-    function getCombinedWalletsBalance() external view returns (uint256) {
-        return _getSharedWalletControllerStorage().combinedWalletsBalance;
-    }
-
-    /**
-     * @inheritdoc ISharedWalletControllerPrimary
-     */
-    function getWalletOverviews(address[] calldata wallets) external view returns (WalletOverview[] memory overviews) {
-        uint256 walletsCount = wallets.length;
-        overviews = new WalletOverview[](walletsCount);
-
-        for (uint256 i = 0; i < walletsCount; i++) {
-            address walletAddress = wallets[i];
-            WalletState storage walletState = _getSharedWalletControllerStorage().wallets[walletAddress];
-
-            // Build participant summaries array
-            uint256 participantsCount = walletState.participants.length;
-            ParticipantSummary[] memory participantSummaries = new ParticipantSummary[](participantsCount);
-
-            for (uint256 j = 0; j < participantsCount; j++) {
-                address participantAddress = walletState.participants[j];
-                ParticipantState storage participantState = walletState.participantStates[participantAddress];
-
-                participantSummaries[j] = ParticipantSummary({
-                    participant: participantAddress,
-                    participantStatus: participantState.status,
-                    participantBalance: participantState.balance
-                });
-            }
-
-            overviews[i] = WalletOverview({
-                wallet: walletAddress,
-                walletStatus: walletState.status,
-                walletBalance: walletState.totalBalance,
-                participantSummaries: participantSummaries
-            });
-        }
     }
 
     /**
@@ -403,13 +315,13 @@ contract SharedWalletController is
 
             for (uint256 j = 0; j < walletsCount; j++) {
                 address walletAddress = participantWallets.at(j);
-                WalletState storage walletState = _getSharedWalletControllerStorage().wallets[walletAddress];
+                WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[walletAddress];
                 ParticipantState storage participantState = walletState.participantStates[participantAddress];
 
                 walletSummaries[j] = WalletSummary({
                     wallet: walletAddress,
                     walletStatus: walletState.status,
-                    walletBalance: walletState.totalBalance,
+                    walletBalance: walletState.balance,
                     participantStatus: participantState.status,
                     participantBalance: participantState.balance
                 });
@@ -420,6 +332,94 @@ contract SharedWalletController is
                 walletSummaries: walletSummaries
             });
         }
+    }
+
+    /**
+     * @inheritdoc ISharedWalletControllerPrimary
+     */
+    function getWalletParticipants(address wallet) external view returns (address[] memory participants) {
+        return _getSharedWalletControllerStorage().walletStates[wallet].participants;
+    }
+
+    /**
+     * @inheritdoc ISharedWalletControllerPrimary
+     */
+    function getWalletOverviews(address[] calldata wallets) external view returns (WalletOverview[] memory overviews) {
+        uint256 walletsCount = wallets.length;
+        overviews = new WalletOverview[](walletsCount);
+
+        for (uint256 i = 0; i < walletsCount; i++) {
+            address walletAddress = wallets[i];
+            WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[walletAddress];
+
+            // Build participant summaries array
+            uint256 participantsCount = walletState.participants.length;
+            ParticipantSummary[] memory participantSummaries = new ParticipantSummary[](participantsCount);
+
+            for (uint256 j = 0; j < participantsCount; j++) {
+                address participantAddress = walletState.participants[j];
+                ParticipantState storage participantState = walletState.participantStates[participantAddress];
+
+                participantSummaries[j] = ParticipantSummary({
+                    participant: participantAddress,
+                    participantStatus: participantState.status,
+                    participantBalance: participantState.balance
+                });
+            }
+
+            overviews[i] = WalletOverview({
+                wallet: walletAddress,
+                walletStatus: walletState.status,
+                walletBalance: walletState.balance,
+                participantSummaries: participantSummaries
+            });
+        }
+    }
+
+    /**
+     * @inheritdoc ISharedWalletControllerPrimary
+     */
+    function getWalletCount() external view returns (uint256) {
+        return _getSharedWalletControllerStorage().walletCount;
+    }
+
+    /**
+     * @inheritdoc ISharedWalletControllerPrimary
+     *
+     * @dev Requirements:
+     *
+     * - Both wallet and participant addresses cannot be zero in the same pair.
+     */
+    function getRelationshipOverviews(
+        WalletParticipantPair[] calldata pairs
+    ) external view returns (WalletParticipantOverview[] memory overviews) {
+        WalletParticipantPair[] memory normalizedPairs = _normalizeWalletParticipantPairs(pairs);
+        uint256 count = normalizedPairs.length;
+        overviews = new WalletParticipantOverview[](count);
+        for (uint256 i = 0; i < count; i++) {
+            address wallet = normalizedPairs[i].wallet;
+            address participant = normalizedPairs[i].participant;
+            WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
+            ParticipantState storage participantState = walletState.participantStates[participant];
+
+            overviews[i] = WalletParticipantOverview({
+                // Wallet information
+                wallet: wallet,
+                    walletStatus: walletState.status,
+                walletBalance: walletState.balance,
+                // Participant information
+                participant: participant,
+                    participantStatus: participantState.status,
+                    participantBalance: participantState.balance
+            });
+        }
+    }
+
+    /**
+     * @inheritdoc ISharedWalletControllerPrimary
+     */
+    function getCombinedWalletsBalance() external view returns (uint256) {
+        return _getSharedWalletControllerStorage().combinedWalletsBalance;
     }
 
     // ------------------ Pure functions -------------------------- //
@@ -439,12 +439,12 @@ contract SharedWalletController is
         address participant
     ) internal {
         if (participant == address(0)) revert SharedWalletController_ParticipantAddressZero();
-        WalletState storage walletState = _getSharedWalletControllerStorage().wallets[wallet];
+        WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
         ParticipantState storage participantState = walletState.participantStates[participant];
         if (participantState.status != ParticipantStatus.NonRegistered) {
             revert SharedWalletController_ParticipantRegisteredAlready();
         }
-        if (_getSharedWalletControllerStorage().wallets[participant].status != WalletStatus.Nonexistent) {
+        if (_getSharedWalletControllerStorage().walletStates[participant].status != WalletStatus.Nonexistent) {
             revert SharedWalletController_ParticipantIsSharedWallet();
         }
         if (walletState.participants.length >= _getMaxParticipantsPerWallet()) {
@@ -535,7 +535,7 @@ contract SharedWalletController is
      * @return The shared wallet as a storage reference.
      */
     function _getExistentWallet(address wallet) internal view returns (WalletState storage) {
-        WalletState storage walletState = _getSharedWalletControllerStorage().wallets[wallet];
+        WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
         if (walletState.status == WalletStatus.Nonexistent) revert SharedWalletController_WalletNonexistent();
         return walletState;
     }
@@ -547,7 +547,7 @@ contract SharedWalletController is
      * @param amount The amount of the transfer.
      */
     function _handleOutgoingTransfer(address wallet, address to, uint256 amount) internal {
-        WalletState storage walletState = _getSharedWalletControllerStorage().wallets[wallet];
+        WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
         if (walletState.participantStates[to].status == ParticipantStatus.Registered) {
             _processDirectTransfer(wallet, to, amount, uint256(TransferDirection.Out));
         } else {
@@ -562,7 +562,7 @@ contract SharedWalletController is
      * @param amount The amount of the transfer.
      */
     function _handleIncomingTransfer(address from, address wallet, uint256 amount) internal {
-        WalletState storage walletState = _getSharedWalletControllerStorage().wallets[wallet];
+        WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
         if (walletState.participantStates[from].status == ParticipantStatus.Registered) {
             _processDirectTransfer(wallet, from, amount, uint256(TransferDirection.In));
         } else {
@@ -583,9 +583,9 @@ contract SharedWalletController is
         uint256 amount,
         uint256 transferDirection
     ) internal {
-        WalletState storage walletState = _getSharedWalletControllerStorage().wallets[wallet];
+        WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
         ParticipantState storage participantState = walletState.participantStates[participant];
-        uint256 oldWalletBalance = walletState.totalBalance;
+        uint256 oldWalletBalance = walletState.balance;
         uint256 newWalletBalance;
         uint256 oldParticipantBalance = participantState.balance;
         uint256 newParticipantBalance;
@@ -624,7 +624,7 @@ contract SharedWalletController is
         }
 
         participantState.balance = newParticipantBalance.toUint64();
-        walletState.totalBalance = newWalletBalance.toUint64();
+        walletState.balance = newWalletBalance.toUint64();
     }
 
     /**
@@ -634,8 +634,8 @@ contract SharedWalletController is
      * @param transferDirection The direction of transfer according to the {TransferDirection} enum.
      */
     function _processDistributionTransfer(address wallet, uint256 amount, uint256 transferDirection) internal {
-        WalletState storage walletState = _getSharedWalletControllerStorage().wallets[wallet];
-        uint256 oldWalletBalance = walletState.totalBalance;
+        WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
+        uint256 oldWalletBalance = walletState.balance;
         uint256 newWalletBalance;
         if (transferDirection == uint256(TransferDirection.In)) {
             newWalletBalance = oldWalletBalance + amount;
@@ -649,7 +649,7 @@ contract SharedWalletController is
                 _getSharedWalletControllerStorage().combinedWalletsBalance -= uint64(amount);
             }
         }
-        walletState.totalBalance = newWalletBalance.toUint64();
+        walletState.balance = newWalletBalance.toUint64();
 
         uint256[] memory shares = _calculateParticipantShares(amount, walletState);
         uint256 participantCount = walletState.participants.length;
@@ -726,7 +726,7 @@ contract SharedWalletController is
     ) internal view returns (uint256[] memory) {
         uint256 i = walletState.participants.length;
         uint256[] memory shares = new uint256[](i);
-        uint256 totalBalance = walletState.totalBalance;
+        uint256 totalBalance = walletState.balance;
         uint256 totalShares = 0;
         uint256 lastNonZeroBalanceIndex = 0;
         if (totalBalance != 0) {
@@ -793,7 +793,7 @@ contract SharedWalletController is
             if (pair.wallet == address(0)) {
                 actualPairCount += _getSharedWalletControllerStorage().participantWallets[pair.participant].length();
             } else if (pair.participant == address(0)) {
-                actualPairCount += _getSharedWalletControllerStorage().wallets[pair.wallet].participants.length;
+                actualPairCount += _getSharedWalletControllerStorage().walletStates[pair.wallet].participants.length;
             } else {
                 actualPairCount += 1;
             }
@@ -818,7 +818,7 @@ contract SharedWalletController is
                     actualPairs[pairIndex++] = WalletParticipantPair(participantWallets.at(j), pair.participant);
                 }
             } else if (pair.participant == address(0)) {
-                WalletState storage walletState = _getSharedWalletControllerStorage().wallets[pair.wallet];
+                WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[pair.wallet];
                 uint256 participantsCount = walletState.participants.length;
                 for (uint256 j = 0; j < participantsCount; j++) {
                     actualPairs[pairIndex++] = WalletParticipantPair(pair.wallet, walletState.participants[j]);
