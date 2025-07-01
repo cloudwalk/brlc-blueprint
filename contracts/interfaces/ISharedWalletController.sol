@@ -69,7 +69,7 @@ interface ISharedWalletControllerTypes {
      * - participants ------- The addresses of the participants in the wallet.
      * - participantStates -- The states of the participants in the wallet.
      */
-    struct SharedWallet {
+    struct WalletState {
         // Slot 1
         WalletStatus status;
         uint64 totalBalance;

@@ -61,7 +61,7 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
         // No reserve until the end of the storage slot
 
         // Slot 2
-        mapping(address wallet => SharedWallet) wallets;
+        mapping(address wallet => WalletState) wallets;
         // No reserve until the end of the storage slot
 
         // Slot 3
