@@ -48,21 +48,6 @@ contract SharedWalletController is
         Out
     }
 
-    /**
-     * @dev Possible policies for the initiator removal from a shared wallet for internal use.
-     *
-     * The initiator is the first participant (index 0) of a shared wallet.
-     *
-     * The values:
-     *
-     * - Prohibit = 0 -- The initiator cannot be removed from the wallet.
-     * - Allow = 1 ----- The initiator can be removed from the wallet.
-     */
-    enum InitiatorRemovalPolicy {
-        Prohibit,
-        Allow
-    }
-
     // ------------------ Constructor ----------------------------- //
 
     /**
@@ -168,6 +153,9 @@ contract SharedWalletController is
         if (sharedWallet.status != WalletStatus.Suspended) {
             revert SharedWalletController_WalletStatusIncompatible(sharedWallet.status, WalletStatus.Suspended);
         }
+        if (sharedWallet.participants.length == 0) {
+            revert SharedWalletController_WalletParticipantCountZero();
+        }
         sharedWallet.status = WalletStatus.Active;
         emit WalletResumed(wallet);
     }
@@ -188,7 +176,7 @@ contract SharedWalletController is
         }
         uint256 participantsCount = sharedWallet.participants.length;
         for (uint256 i = 0; i < participantsCount; i++) {
-            _removeParticipant(wallet, sharedWallet.participants[i], uint256(InitiatorRemovalPolicy.Allow));
+            _removeParticipant(wallet, sharedWallet.participants[i], sharedWallet);
         }
         sharedWallet.status = WalletStatus.Nonexistent;
         emit WalletDeleted(wallet);
@@ -233,10 +221,16 @@ contract SharedWalletController is
         address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
-        _getExistentWallet(wallet);
+        SharedWallet storage sharedWallet = _getExistentWallet(wallet);
+
         uint256 participantsCount = participants.length;
         for (uint256 i = 0; i < participantsCount; i++) {
-            _removeParticipant(wallet, participants[i], uint256(InitiatorRemovalPolicy.Prohibit));
+            _removeParticipant(wallet, participants[i], sharedWallet);
+        }
+
+        if (sharedWallet.status == WalletStatus.Active &&
+            sharedWallet.participants.length == 0) {
+            revert SharedWalletController_WalletWouldBecomeEmpty();
         }
     }
 
@@ -396,29 +390,36 @@ contract SharedWalletController is
      * @dev Removes a participant from a wallet.
      * @param wallet The address of the wallet.
      * @param participant The address of the participant.
-     * @param initiatorRemovalPolicy The policy for the initiator removal according to the {InitiatorRemovalPolicy} enum.
+     * @param sharedWallet The shared wallet storage reference.
      */
     function _removeParticipant(
         address wallet,
         address participant,
-        uint256 initiatorRemovalPolicy
+        SharedWallet storage sharedWallet
     ) internal {
-        SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
         if (sharedWallet.participantStates[participant].status == ParticipantStatus.NonRegistered) {
             revert SharedWalletController_ParticipantNonRegistered(participant);
         }
         if (sharedWallet.participantStates[participant].balance > 0) {
             revert SharedWalletController_ParticipantBalanceNonzero(participant);
         }
-        if (
-            initiatorRemovalPolicy == uint256(InitiatorRemovalPolicy.Prohibit) &&
-            sharedWallet.participantStates[participant].index == 0
-        ) {
-            revert SharedWalletController_ParticipantUnremovable(participant);
-        }
 
+        _removeParticipantFromWallet(participant, sharedWallet);
+        _removeWalletFromParticipant(wallet, participant);
+
+        emit ParticipantRemoved(wallet, participant);
+    }
+
+    /**
+     * @dev Removes a participant from the wallet's data structures.
+     * @param sharedWallet The shared wallet storage reference.
+     * @param participant The address of the participant to remove.
+     */
+    function _removeParticipantFromWallet(
+        address participant,
+        SharedWallet storage sharedWallet
+    ) internal {
         // Remove from the array and clear storage
-        {
             uint256 removedIndex = sharedWallet.participantStates[participant].index;
             uint256 lastIndex = sharedWallet.participants.length - 1;
             address participantWithLastIndex = sharedWallet.participants[lastIndex];
@@ -431,9 +432,13 @@ contract SharedWalletController is
             delete sharedWallet.participantStates[participant];
         }
 
+    /**
+     * @dev Removes a wallet from the participant's wallet list.
+     * @param participant The address of the participant.
+     * @param wallet The address of the wallet to remove.
+     */
+    function _removeWalletFromParticipant(address wallet, address participant) internal {
         _getSharedWalletControllerStorage().participantWallets[participant].remove(wallet);
-
-        emit ParticipantRemoved(wallet, participant);
     }
 
     /**
