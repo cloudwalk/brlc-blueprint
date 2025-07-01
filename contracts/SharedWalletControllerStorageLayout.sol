@@ -72,7 +72,7 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
     // ------------------ Internal functions ---------------------- //
 
     /// @dev Returns the storage slot location for the `SharedWalletControllerStorage` struct.
-    function _getSharedWalletControllerStorage() internal pure returns (SharedWalletControllerStorage storage $) {
+    function _getStorage() internal pure returns (SharedWalletControllerStorage storage $) {
         assembly {
             $.slot := SHARED_WALLET_CONTROLLER_STORAGE_LOCATION
         }
