@@ -102,15 +102,21 @@ contract SharedWalletController is
         address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
-        if (wallet == address(0)) revert SharedWalletController_WalletAddressZero();
-        if (participants.length == 0) revert SharedWalletController_ParticipantArrayEmpty();
-        WalletState storage walletState = _getSharedWalletControllerStorage().wallets[wallet];
+        if (wallet == address(0)) {
+            revert SharedWalletController_WalletAddressZero();
+        }
+        if (participants.length == 0) {
+            revert SharedWalletController_ParticipantArrayEmpty();
+        }
+
+        WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
+
         if (walletState.status != WalletStatus.Nonexistent) {
             revert SharedWalletController_WalletExistentAlready();
         }
 
         walletState.status = WalletStatus.Active;
-        _increaseWalletCount();
+        _incrementWalletCount();
         emit WalletCreated(wallet);
 
         uint256 participantsCount = participants.length;
@@ -131,10 +137,14 @@ contract SharedWalletController is
      */
     function suspendWallet(address wallet) external onlyRole(ADMIN_ROLE) {
         WalletState storage walletState = _getExistentWallet(wallet);
+
         if (walletState.status != WalletStatus.Active) {
             revert SharedWalletController_WalletStatusIncompatible(walletState.status, WalletStatus.Active);
         }
-        if (walletState.balance > 0) revert SharedWalletController_WalletBalanceNonzero();
+        if (walletState.balance > 0) {
+            revert SharedWalletController_WalletBalanceNonzero();
+        }
+
         walletState.status = WalletStatus.Suspended;
         emit WalletSuspended(wallet);
     }
@@ -306,29 +316,34 @@ contract SharedWalletController is
         overviews = new ParticipantOverview[](participantsCount);
 
         for (uint256 i = 0; i < participantsCount; i++) {
-            address participantAddress = participants[i];
+            address participant = participants[i];
             EnumerableSet.AddressSet storage participantWallets =
-                _getSharedWalletControllerStorage().participantWallets[participantAddress];
+                _getSharedWalletControllerStorage().participantWallets[participant];
 
             uint256 walletsCount = participantWallets.length();
             WalletSummary[] memory walletSummaries = new WalletSummary[](walletsCount);
+            uint256 totalBalance = 0;
 
             for (uint256 j = 0; j < walletsCount; j++) {
-                address walletAddress = participantWallets.at(j);
-                WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[walletAddress];
-                ParticipantState storage participantState = walletState.participantStates[participantAddress];
+                address wallet = participantWallets.at(j);
+                WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
+                ParticipantState storage participantState = walletState.participantStates[participant];
+
+                uint256 participantBalance = participantState.balance;
+                totalBalance += participantBalance;
 
                 walletSummaries[j] = WalletSummary({
-                    wallet: walletAddress,
+                    wallet: wallet,
                     walletStatus: walletState.status,
                     walletBalance: walletState.balance,
                     participantStatus: participantState.status,
-                    participantBalance: participantState.balance
+                    participantBalance: participantBalance
                 });
             }
 
             overviews[i] = ParticipantOverview({
-                participant: participantAddress,
+                participant: participant,
+                totalBalance: totalBalance,
                 walletSummaries: walletSummaries
             });
         }
@@ -536,7 +551,9 @@ contract SharedWalletController is
      */
     function _getExistentWallet(address wallet) internal view returns (WalletState storage) {
         WalletState storage walletState = _getSharedWalletControllerStorage().walletStates[wallet];
-        if (walletState.status == WalletStatus.Nonexistent) revert SharedWalletController_WalletNonexistent();
+        if (walletState.status == WalletStatus.Nonexistent) {
+            revert SharedWalletController_WalletNonexistent();
+        }
         return walletState;
     }
 
@@ -698,9 +715,11 @@ contract SharedWalletController is
     /**
      * @dev Increases the number of existing shared wallets by 1.
      */
-    function _increaseWalletCount() internal {
+    function _incrementWalletCount() internal {
         uint256 newWalletCount = _getSharedWalletControllerStorage().walletCount + 1;
-        if (newWalletCount > type(uint32).max) revert SharedWalletController_WalletCountExcess();
+        if (newWalletCount > type(uint32).max) {
+            revert SharedWalletController_WalletCountExcess();
+        }
         _getSharedWalletControllerStorage().walletCount = uint32(newWalletCount);
     }
 
@@ -710,7 +729,9 @@ contract SharedWalletController is
      */
     function _increaseCombinedWalletsBalance(uint256 amount) internal {
         uint256 newCombinedBalance = uint256(_getSharedWalletControllerStorage().combinedWalletsBalance) + amount;
-        if (newCombinedBalance > type(uint64).max) revert SharedWalletController_CombinedWalletsBalanceExcess();
+        if (newCombinedBalance > type(uint64).max) {
+            revert SharedWalletController_CombinedWalletsBalanceExcess();
+        }
         _getSharedWalletControllerStorage().combinedWalletsBalance = uint64(newCombinedBalance);
     }
 

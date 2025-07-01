@@ -126,6 +126,7 @@ interface ISharedWalletControllerTypes {
      */
     struct ParticipantOverview {
         address participant;
+        uint256 totalBalance;
         WalletSummary[] walletSummaries;
     }
 
