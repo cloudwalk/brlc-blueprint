@@ -284,22 +284,28 @@ contract SharedWalletController is
      *
      * - Both wallet and participant addresses cannot be zero in the same pair.
      */
-    function getParticipantDetails(
+    function getRelationshipOverviews(
         WalletParticipantPair[] calldata pairs
-    ) external view returns (WalletParticipantDetails[] memory details) {
+    ) external view returns (RelationshipOverview[] memory overviews) {
         WalletParticipantPair[] memory normalizedPairs = _normalizeWalletParticipantPairs(pairs);
         uint256 count = normalizedPairs.length;
-        details = new WalletParticipantDetails[](count);
+        overviews = new RelationshipOverview[](count);
         for (uint256 i = 0; i < count; i++) {
             address wallet = normalizedPairs[i].wallet;
             address participant = normalizedPairs[i].participant;
-            ParticipantState storage participantState =
-                _getSharedWalletControllerStorage().wallets[wallet].participantStates[participant];
-            details[i].wallet = wallet;
-            details[i].participant = participant;
-            details[i].status = participantState.status;
-            details[i].index = participantState.index;
-            details[i].balance = participantState.balance;
+            SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[wallet];
+            ParticipantState storage participantState = sharedWallet.participantStates[participant];
+
+            overviews[i] = RelationshipOverview({
+                // Wallet information
+                wallet: wallet,
+                walletStatus: sharedWallet.status,
+                walletBalance: sharedWallet.totalBalance,
+                // Participant information
+                participant: participant,
+                participantStatus: participantState.status,
+                participantBalance: participantState.balance
+            });
         }
     }
 
@@ -343,6 +349,77 @@ contract SharedWalletController is
      */
     function getCombinedWalletsBalance() external view returns (uint256) {
         return _getSharedWalletControllerStorage().combinedWalletsBalance;
+    }
+
+    /**
+     * @inheritdoc ISharedWalletControllerPrimary
+     */
+    function getWalletOverviews(address[] calldata wallets) external view returns (WalletOverview[] memory overviews) {
+        uint256 walletsCount = wallets.length;
+        overviews = new WalletOverview[](walletsCount);
+
+        for (uint256 i = 0; i < walletsCount; i++) {
+            address walletAddress = wallets[i];
+            SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[walletAddress];
+
+            // Build participant summaries array
+            uint256 participantsCount = sharedWallet.participants.length;
+            ParticipantSummary[] memory participantSummaries = new ParticipantSummary[](participantsCount);
+
+            for (uint256 j = 0; j < participantsCount; j++) {
+                address participantAddress = sharedWallet.participants[j];
+                ParticipantState storage participantState = sharedWallet.participantStates[participantAddress];
+
+                participantSummaries[j] = ParticipantSummary({
+                    participant: participantAddress,
+                    participantStatus: participantState.status,
+                    participantBalance: participantState.balance
+                });
+            }
+
+            overviews[i] = WalletOverview({
+                wallet: walletAddress,
+                walletStatus: sharedWallet.status,
+                walletBalance: sharedWallet.totalBalance,
+                participantSummaries: participantSummaries
+            });
+        }
+    }
+
+    /**
+     * @inheritdoc ISharedWalletControllerPrimary
+     */
+    function getParticipantOverviews(address[] calldata participants) external view returns (ParticipantOverview[] memory overviews) {
+        uint256 participantsCount = participants.length;
+        overviews = new ParticipantOverview[](participantsCount);
+
+        for (uint256 i = 0; i < participantsCount; i++) {
+            address participantAddress = participants[i];
+            EnumerableSet.AddressSet storage participantWallets =
+                _getSharedWalletControllerStorage().participantWallets[participantAddress];
+
+            uint256 walletsCount = participantWallets.length();
+            WalletSummary[] memory walletSummaries = new WalletSummary[](walletsCount);
+
+            for (uint256 j = 0; j < walletsCount; j++) {
+                address walletAddress = participantWallets.at(j);
+                SharedWallet storage sharedWallet = _getSharedWalletControllerStorage().wallets[walletAddress];
+                ParticipantState storage participantState = sharedWallet.participantStates[participantAddress];
+
+                walletSummaries[j] = WalletSummary({
+                    wallet: walletAddress,
+                    walletStatus: sharedWallet.status,
+                    walletBalance: sharedWallet.totalBalance,
+                    participantStatus: participantState.status,
+                    participantBalance: participantState.balance
+                });
+            }
+
+            overviews[i] = ParticipantOverview({
+                participant: participantAddress,
+                walletSummaries: walletSummaries
+            });
+        }
     }
 
     // ------------------ Pure functions -------------------------- //

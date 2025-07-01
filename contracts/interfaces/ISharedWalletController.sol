@@ -85,6 +85,70 @@ interface ISharedWalletControllerTypes {
     }
 
     /**
+     * @dev A struct containing overview information about a shared wallet.
+     *
+     * The fields:
+     *
+     * - wallet ---------------- The address of the shared wallet.
+     * - walletStatus ---------- The status of the wallet according to the {WalletStatus} enum.
+     * - walletBalance --------- The total balance of the wallet that is shared among its participants.
+     * - participantSummaries -- The participant summaries in the wallet according to the {ParticipantSummary} struct.
+     */
+    struct WalletOverview {
+        address wallet;
+        WalletStatus walletStatus;
+        uint256 walletBalance;
+        ParticipantSummary[] participantSummaries;
+    }
+
+    /**
+     * @dev A struct containing summary information about a participant in a shared wallet.
+     *
+     * The fields:
+     *
+     * - participant --------- The address of the participant.
+     * - participantStatus --- The status of the participant according to the {ParticipantStatus} enum.
+     * - participantBalance -- The balance of the participant in the shared wallet.
+     */
+    struct ParticipantSummary {
+        address participant;
+        ParticipantStatus participantStatus;
+        uint256 participantBalance;
+    }
+
+    /**
+     * @dev A struct containing overview information about a participant.
+     *
+     * The fields:
+     *
+     * - participant ------ The address of the participant.
+     * - walletSummaries -- The wallet summaries of the participant according to the {WalletSummary} struct.
+     */
+    struct ParticipantOverview {
+        address participant;
+        WalletSummary[] walletSummaries;
+    }
+
+    /**
+     * @dev A struct containing summary information about a wallet of a participant.
+     *
+     * The fields:
+     *
+     * - wallet -------------- The address of the wallet.
+     * - walletStatus -------- The status of the wallet according to the {WalletStatus} enum.
+     * - walletBalance ------- The balance of the wallet.
+     * - participantStatus --- The status of the participant according to the {ParticipantStatus} enum.
+     * - participantBalance -- The balance of the participant in the wallet.
+     */
+    struct WalletSummary {
+        address wallet;
+        WalletStatus walletStatus;
+        uint256 walletBalance;
+        ParticipantStatus participantStatus;
+        uint256 participantBalance;
+    }
+
+    /**
      * @dev A struct containing a pair of a wallet and a participant to use as a parameter of a view function.
      *
      * The fields:
@@ -106,22 +170,26 @@ interface ISharedWalletControllerTypes {
     }
 
     /**
-     * @dev A struct containing detailed information about a participant within a shared wallet.
+     * @dev A struct containing overview information about a wallet-participant relationship.
      *
      * The fields:
      *
-     * - wallet ------- The address of the shared wallet.
-     * - status ------- The status of the participant according to the {ParticipantStatus} enum.
-     * - index -------- The index of the participant address in the shared wallet.
-     * - participant -- The address of the participant.
-     * - balance ------ The balance of the participant in the shared wallet.
+     * - wallet -------------- The address of the shared wallet.
+     * - walletStatus -------- The status of the wallet according to the {WalletStatus} enum.
+     * - walletBalance ------- The balance of the wallet that is shared among its participants.
+     * - participant --------- The address of the participant.
+     * - participantStatus --- The status of the participant according to the {ParticipantStatus} enum.
+     * - participantBalance -- The balance of the participant in the shared wallet.
      */
-    struct WalletParticipantDetails {
+    struct RelationshipOverview {
+        // Wallet information
         address wallet;
-        ParticipantStatus status;
-        uint16 index;
+        WalletStatus walletStatus;
+        uint256 walletBalance;
+        // Participant information
         address participant;
-        uint256 balance;
+        ParticipantStatus participantStatus;
+        uint256 participantBalance;
     }
 }
 
@@ -301,17 +369,19 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     // ------------------ View functions --------------------------- //
 
     /**
-     * @dev Returns participant details for specified wallet-participant pairs.
+     * @dev Returns detailed information for wallet-participant relationships.
      *
-     * Supports wildcards: use zero wallet address to get all wallets for a participant,
-     * or zero participant address to get all participants for a wallet.
+     * Wildcard support:
+     * - Use zero wallet address to get all wallets for a participant;
+     * - Use zero participant address to get all participants for a wallet;
+     * - Specify both addresses for exact pair information.
      *
-     * @param pairs The wallet-participant pairs to get the details for.
-     * @return details The wallet-participant details for the provided pairs.
+     * @param pairs The wallet-participant pairs to get details for (supports wildcards).
+     * @return overviews The detailed information for each resolved pair after wildcard expansion.
      */
-    function getParticipantDetails(
+    function getRelationshipOverviews(
         WalletParticipantPair[] calldata pairs
-    ) external view returns (WalletParticipantDetails[] memory details);
+    ) external view returns (RelationshipOverview[] memory overviews);
 
     /**
      * @dev Returns the shared wallets that a participant is a part of.
@@ -321,11 +391,25 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     function getParticipantWallets(address participant) external view returns (address[] memory wallets);
 
     /**
+     * @dev Returns detailed information for participants.
+     * @param participants The addresses of the participants to get details for.
+     * @return overviews The detailed information for each participant.
+     */
+    function getParticipantOverviews(address[] calldata participants) external view returns (ParticipantOverview[] memory overviews);
+
+    /**
      * @dev Returns all participants of a shared wallet.
      * @param wallet The address of the shared wallet.
      * @return participants The addresses of all participants of the shared wallet.
      */
     function getWalletParticipants(address wallet) external view returns (address[] memory participants);
+
+    /**
+     * @dev Returns detailed information for shared wallets.
+     * @param wallets The addresses of the shared wallets to get details for.
+     * @return overviews The detailed information for each shared wallet.
+     */
+    function getWalletOverviews(address[] calldata wallets) external view returns (WalletOverview[] memory overviews);
 
     /**
      * @dev Returns the balance of a participant in a shared wallet.
@@ -437,6 +521,12 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
 
     /// @dev Thrown if the provided wallet and participant addresses are both zero.
     error SharedWalletController_WalletParticipantAddressesBothZero();
+
+    /// @dev Thrown if the wallet has no participants and cannot be resumed.
+    error SharedWalletController_WalletParticipantCountZero();
+
+    /// @dev Thrown if the operation would result in an empty active wallet.
+    error SharedWalletController_WalletWouldBecomeEmpty();
 
     /// @dev Thrown if the provided wallet status is incompatible.
     error SharedWalletController_WalletStatusIncompatible(
