@@ -114,15 +114,15 @@ contract SharedWalletController is
         WalletState storage walletState = $.walletStates[wallet];
 
         if (walletState.status != WalletStatus.Nonexistent) {
-            revert SharedWalletController_WalletExistentAlready();
+            revert SharedWalletController_WalletAlreadyExists();
         }
 
         walletState.status = WalletStatus.Active;
         _incrementWalletCount();
         emit WalletCreated(wallet);
 
-        uint256 participantsCount = participants.length;
-        for (uint256 i = 0; i < participantsCount; i++) {
+        uint256 participantCount = participants.length;
+        for (uint256 i = 0; i < participantCount; i++) {
             _addParticipant(wallet, participants[i]);
         }
     }
@@ -144,7 +144,7 @@ contract SharedWalletController is
             revert SharedWalletController_WalletStatusIncompatible(walletState.status, WalletStatus.Active);
         }
         if (walletState.balance > 0) {
-            revert SharedWalletController_WalletBalanceNonzero();
+            revert SharedWalletController_WalletBalanceNotZero();
         }
 
         walletState.status = WalletStatus.Suspended;
@@ -166,7 +166,7 @@ contract SharedWalletController is
             revert SharedWalletController_WalletStatusIncompatible(walletState.status, WalletStatus.Suspended);
         }
         if (walletState.participants.length == 0) {
-            revert SharedWalletController_WalletParticipantCountZero();
+            revert SharedWalletController_WalletHasNoParticipants(); // Add centralized check for active wallets?
         }
         walletState.status = WalletStatus.Active;
         emit WalletResumed(wallet);
@@ -186,8 +186,8 @@ contract SharedWalletController is
         if (walletState.status != WalletStatus.Suspended) {
             revert SharedWalletController_WalletStatusIncompatible(walletState.status, WalletStatus.Suspended);
         }
-        uint256 participantsCount = walletState.participants.length;
-        for (uint256 i = 0; i < participantsCount; i++) {
+        uint256 participantCount = walletState.participants.length;
+        for (uint256 i = 0; i < participantCount; i++) {
             _removeParticipant(wallet, walletState.participants[i], walletState);
         }
         walletState.status = WalletStatus.Nonexistent;
@@ -211,8 +211,8 @@ contract SharedWalletController is
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
         _getExistentWallet(wallet);
-        uint256 participantsCount = participants.length;
-        for (uint256 i = 0; i < participantsCount; i++) {
+        uint256 participantCount = participants.length;
+        for (uint256 i = 0; i < participantCount; i++) {
             address participant = participants[i];
             _addParticipant(wallet, participant);
         }
@@ -235,13 +235,12 @@ contract SharedWalletController is
     ) external onlyRole(ADMIN_ROLE) {
         WalletState storage walletState = _getExistentWallet(wallet);
 
-        uint256 participantsCount = participants.length;
-        for (uint256 i = 0; i < participantsCount; i++) {
+        uint256 participantCount = participants.length;
+        for (uint256 i = 0; i < participantCount; i++) {
             _removeParticipant(wallet, participants[i], walletState);
         }
 
-        if (walletState.status == WalletStatus.Active &&
-            walletState.participants.length == 0) {
+        if (_wouldBecomeEmptyActiveWallet(walletState)) {
             revert SharedWalletController_WalletWouldBecomeEmpty();
         }
     }
@@ -325,18 +324,18 @@ contract SharedWalletController is
     function getParticipantOverviews(address[] calldata participants) external view returns (ParticipantOverview[] memory overviews) {
         SharedWalletControllerStorage storage $ = _getStorage();
 
-        uint256 participantsCount = participants.length;
-        overviews = new ParticipantOverview[](participantsCount);
+        uint256 participantCount = participants.length;
+        overviews = new ParticipantOverview[](participantCount);
 
-        for (uint256 i = 0; i < participantsCount; i++) {
+        for (uint256 i = 0; i < participantCount; i++) {
             address participant = participants[i];
             EnumerableSet.AddressSet storage participantWallets = $.participantWallets[participant];
 
-            uint256 walletsCount = participantWallets.length();
-            WalletSummary[] memory walletSummaries = new WalletSummary[](walletsCount);
+            uint256 walletCount = participantWallets.length();
+            WalletSummary[] memory walletSummaries = new WalletSummary[](walletCount);
             uint256 totalBalance = 0;
 
-            for (uint256 j = 0; j < walletsCount; j++) {
+            for (uint256 j = 0; j < walletCount; j++) {
                 address wallet = participantWallets.at(j);
                 WalletState storage walletState = $.walletStates[wallet];
                 ParticipantState storage participantState = walletState.participantStates[participant];
@@ -375,18 +374,18 @@ contract SharedWalletController is
     function getWalletOverviews(address[] calldata wallets) external view returns (WalletOverview[] memory overviews) {
         SharedWalletControllerStorage storage $ = _getStorage();
 
-        uint256 walletsCount = wallets.length;
-        overviews = new WalletOverview[](walletsCount);
+        uint256 walletCount = wallets.length;
+        overviews = new WalletOverview[](walletCount);
 
-        for (uint256 i = 0; i < walletsCount; i++) {
+        for (uint256 i = 0; i < walletCount; i++) {
             address wallet = wallets[i];
             WalletState storage walletState = $.walletStates[wallet];
 
             // Build participant summaries array
-            uint256 participantsCount = walletState.participants.length;
-            ParticipantSummary[] memory participantSummaries = new ParticipantSummary[](participantsCount);
+            uint256 participantCount = walletState.participants.length;
+            ParticipantSummary[] memory participantSummaries = new ParticipantSummary[](participantCount);
 
-            for (uint256 j = 0; j < participantsCount; j++) {
+            for (uint256 j = 0; j < participantCount; j++) {
                 address participantAddress = walletState.participants[j];
                 ParticipantState storage participantState = walletState.participantStates[participantAddress];
 
@@ -427,10 +426,10 @@ contract SharedWalletController is
         SharedWalletControllerStorage storage $ = _getStorage();
 
         WalletParticipantPair[] memory normalizedPairs = _normalizeWalletParticipantPairs(pairs);
-        uint256 count = normalizedPairs.length;
-        overviews = new WalletParticipantOverview[](count);
+        uint256 normalizedPairCount = normalizedPairs.length;
+        overviews = new WalletParticipantOverview[](normalizedPairCount);
 
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i = 0; i < normalizedPairCount; i++) {
             address wallet = normalizedPairs[i].wallet;
             address participant = normalizedPairs[i].participant;
             WalletState storage walletState = $.walletStates[wallet];
@@ -482,13 +481,13 @@ contract SharedWalletController is
         ParticipantState storage participantState = walletState.participantStates[participant];
 
         if (participantState.status != ParticipantStatus.NonRegistered) {
-            revert SharedWalletController_ParticipantRegisteredAlready();
+            revert SharedWalletController_ParticipantAlreadyRegistered();
         }
         if ($.walletStates[participant].status != WalletStatus.Nonexistent) {
             revert SharedWalletController_ParticipantIsSharedWallet();
         }
         if (walletState.participants.length >= _getMaxParticipantsPerWallet()) {
-            revert SharedWalletController_ParticipantCountExcess();
+            revert SharedWalletController_ParticipantCountExceedsLimit();
         }
 
         uint256 newParticipantIndex = walletState.participants.length;
@@ -515,13 +514,13 @@ contract SharedWalletController is
         WalletState storage walletState
     ) internal {
         if (walletState.participantStates[participant].status == ParticipantStatus.NonRegistered) {
-            revert SharedWalletController_ParticipantNonRegistered(participant);
+            revert SharedWalletController_ParticipantNotRegistered(participant);
         }
         if (walletState.participantStates[participant].balance > 0) {
-            revert SharedWalletController_ParticipantBalanceNonzero(participant);
+            revert SharedWalletController_ParticipantBalanceNotZero(participant);
         }
 
-        _removeParticipantFromWallet(participant, walletState);
+        _removeParticipantFromWallet(walletState, participant);
         _removeWalletFromParticipant(wallet, participant);
 
         emit ParticipantRemoved(wallet, participant);
@@ -533,8 +532,8 @@ contract SharedWalletController is
      * @param participant The address of the participant to remove.
      */
     function _removeParticipantFromWallet(
-        address participant,
-        WalletState storage walletState
+        WalletState storage walletState,
+        address participant
     ) internal {
         // Remove from the array and clear storage
         uint256 removedIndex = walletState.participantStates[participant].index;
@@ -568,6 +567,15 @@ contract SharedWalletController is
      */
     function _getMaxParticipantsPerWallet() internal pure virtual returns (uint256) {
         return MAX_PARTICIPANTS_PER_WALLET;
+    }
+
+    /**
+     * @dev Checks if removing participants would result in an empty active wallet.
+     * @param walletState The wallet state to check.
+     * @return True if the wallet would become an empty active wallet, false otherwise.
+     */
+    function _wouldBecomeEmptyActiveWallet(WalletState storage walletState) internal view returns (bool) {
+        return walletState.status == WalletStatus.Active && walletState.participants.length == 0;
     }
 
     /**
@@ -729,7 +737,7 @@ contract SharedWalletController is
                     );
                 } else {
                     if (oldParticipantBalance < shares[i]) {
-                        revert SharedWalletController_SharesCalculationIncorrect();
+                        revert SharedWalletController_SharesCalculationInvalid();
                     }
                     unchecked{
                         newParticipantBalance = oldParticipantBalance - shares[i];
@@ -758,7 +766,7 @@ contract SharedWalletController is
 
         uint256 newWalletCount = $.walletCount + 1;
         if (newWalletCount > type(uint32).max) {
-            revert SharedWalletController_WalletCountExcess();
+            revert SharedWalletController_WalletCountExceedsLimit();
         }
 
         $.walletCount = uint32(newWalletCount);
@@ -773,7 +781,7 @@ contract SharedWalletController is
 
         uint256 newCombinedBalance = uint256($.combinedWalletsBalance) + amount;
         if (newCombinedBalance > type(uint64).max) {
-            revert SharedWalletController_CombinedWalletsBalanceExcess();
+            revert SharedWalletController_CombinedWalletsBalanceExceedsLimit();
         }
 
         $.combinedWalletsBalance = uint64(newCombinedBalance);
@@ -853,7 +861,7 @@ contract SharedWalletController is
             WalletParticipantPair calldata pair = pairs[i];
 
             if (pair.wallet == address(0) && pair.participant == address(0)) {
-                revert SharedWalletController_WalletParticipantAddressesBothZero();
+                revert SharedWalletController_WalletAndParticipantAddressesBothZero();
             }
 
             if (pair.wallet == address(0)) {
@@ -878,14 +886,14 @@ contract SharedWalletController is
 
             if (pair.wallet == address(0)) {
                 EnumerableSet.AddressSet storage participantWallets = $.participantWallets[pair.participant];
-                uint256 walletsCount = participantWallets.length();
-                for (uint256 j = 0; j < walletsCount; j++) {
+                uint256 walletCount = participantWallets.length();
+                for (uint256 j = 0; j < walletCount; j++) {
                     actualPairs[pairIndex++] = WalletParticipantPair(participantWallets.at(j), pair.participant);
                 }
             } else if (pair.participant == address(0)) {
                 WalletState storage walletState = $.walletStates[pair.wallet];
-                uint256 participantsCount = walletState.participants.length;
-                for (uint256 j = 0; j < participantsCount; j++) {
+                uint256 participantCount = walletState.participants.length;
+                for (uint256 j = 0; j < participantCount; j++) {
                     actualPairs[pairIndex++] = WalletParticipantPair(pair.wallet, walletState.participants[j]);
                 }
             } else {
@@ -902,7 +910,8 @@ contract SharedWalletController is
      */
     function _validateUpgrade(address newImplementation) internal view override onlyRole(OWNER_ROLE) {
         try ISharedWalletController(newImplementation).proveSharedWalletController() {} catch {
-            revert SharedWalletController_ImplementationAddressInvalid();
+            revert SharedWalletController_ImplementationInvalid();
         }
     }
 }
+

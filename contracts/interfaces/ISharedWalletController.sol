@@ -448,10 +448,10 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
  */
 interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     /// @dev Thrown if the combined wallets balance across all shared wallets exceeds the limit.
-    error SharedWalletController_CombinedWalletsBalanceExcess();
+    error SharedWalletController_CombinedWalletsBalanceExceedsLimit();
 
     /// @dev Thrown if the implementation address provided for the contract upgrade is invalid.
-    error SharedWalletController_ImplementationAddressInvalid();
+    error SharedWalletController_ImplementationInvalid();
 
     /// @dev Thrown if the provided participant address is zero.
     error SharedWalletController_ParticipantAddressZero();
@@ -462,23 +462,20 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     /// @dev Thrown if the current participant balance is insufficient for the operation.
     error SharedWalletController_ParticipantBalanceInsufficient();
 
-    /// @dev Thrown if the current participant balance is nonzero.
-    error SharedWalletController_ParticipantBalanceNonzero(address participant);
+    /// @dev Thrown if the current participant balance is not zero.
+    error SharedWalletController_ParticipantBalanceNotZero(address participant);
 
     /// @dev Thrown if during the operation the number of participants in the wallet exceeds the limit.
-    error SharedWalletController_ParticipantCountExcess();
+    error SharedWalletController_ParticipantCountExceedsLimit();
 
     /// @dev Thrown if the provided participant is NOT registered in the shared wallet.
-    error SharedWalletController_ParticipantNonRegistered(address participant);
+    error SharedWalletController_ParticipantNotRegistered(address participant);
 
     /// @dev Thrown if the provided participant is already registered in the shared wallet.
-    error SharedWalletController_ParticipantRegisteredAlready();
+    error SharedWalletController_ParticipantAlreadyRegistered();
 
     /// @dev Thrown if the provided participant is a shared wallet.
     error SharedWalletController_ParticipantIsSharedWallet();
-
-    /// @dev Thrown if the provided participant is not allowed to be removed from the wallet.
-    error SharedWalletController_ParticipantUnremovable(address participant);
 
     /**
      * @dev Thrown if the shares calculation is incorrect.
@@ -497,7 +494,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
      *
      * Possible workaround: transfer 0.01 BRLC to account A, then repeat the transfer.
      */
-    error SharedWalletController_SharesCalculationIncorrect();
+    error SharedWalletController_SharesCalculationInvalid();
 
     /// @dev Thrown if the provided token is unauthorized.
     error SharedWalletController_TokenUnauthorized();
@@ -506,25 +503,25 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     error SharedWalletController_WalletAddressZero();
 
     /// @dev Thrown if the number of existing shared wallets exceeds the limit.
-    error SharedWalletController_WalletCountExcess();
+    error SharedWalletController_WalletCountExceedsLimit();
 
     /// @dev Thrown if the provided wallet already exists.
-    error SharedWalletController_WalletExistentAlready();
+    error SharedWalletController_WalletAlreadyExists();
 
     /// @dev Thrown if the current wallet balance is insufficient for the operation.
     error SharedWalletController_WalletBalanceInsufficient();
 
-    /// @dev Thrown if the current wallet balance is nonzero.
-    error SharedWalletController_WalletBalanceNonzero();
+    /// @dev Thrown if the current wallet balance is not zero.
+    error SharedWalletController_WalletBalanceNotZero();
 
     /// @dev Thrown if the provided wallet does not exist.
     error SharedWalletController_WalletNonexistent();
 
     /// @dev Thrown if the provided wallet and participant addresses are both zero.
-    error SharedWalletController_WalletParticipantAddressesBothZero();
+    error SharedWalletController_WalletAndParticipantAddressesBothZero();
 
     /// @dev Thrown if the wallet has no participants and cannot be resumed.
-    error SharedWalletController_WalletParticipantCountZero();
+    error SharedWalletController_WalletHasNoParticipants();
 
     /// @dev Thrown if the operation would result in an empty active wallet.
     error SharedWalletController_WalletWouldBecomeEmpty();
