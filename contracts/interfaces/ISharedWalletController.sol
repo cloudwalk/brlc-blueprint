@@ -76,11 +76,11 @@ interface ISharedWalletControllerTypes {
      *
      * The values:
      *
-     * - NonRegistered = 0 -- The participant with the provided address is not registered in the shared wallet.
+     * - NotRegistered = 0 -- The participant with the provided address is not registered in the shared wallet.
      * - Registered = 1 ----- The participant is registered in the shared wallet.
      */
     enum ParticipantStatus {
-        NonRegistered,
+        NotRegistered,
         Registered
     }
 
@@ -435,10 +435,10 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
     function getWalletCount() external view returns (uint256);
 
     /**
-     * @dev Returns the combined balance across all shared wallets.
-     * @return The combined balance across all shared wallets.
+     * @dev Returns the aggregated balance across all shared wallets.
+     * @return The aggregated balance across all shared wallets.
      */
-    function getCombinedWalletsBalance() external view returns (uint256);
+    function getAggregatedBalance() external view returns (uint256);
 }
 
 /**
@@ -447,8 +447,8 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
  * @dev The errors of the shared wallet controller smart contract.
  */
 interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
-    /// @dev Thrown if the combined wallets balance across all shared wallets exceeds the limit.
-    error SharedWalletController_CombinedWalletsBalanceExceedsLimit();
+    /// @dev Thrown if the aggregated balance across all shared wallets exceeds the limit.
+    error SharedWalletController_AggregatedBalanceExceedsLimit();
 
     /// @dev Thrown if the implementation address provided for the contract upgrade is invalid.
     error SharedWalletController_ImplementationInvalid();
@@ -468,7 +468,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     /// @dev Thrown if during the operation the number of participants in the wallet exceeds the limit.
     error SharedWalletController_ParticipantCountExceedsLimit();
 
-    /// @dev Thrown if the provided participant is NOT registered in the shared wallet.
+    /// @dev Thrown if the provided participant is not registered in the shared wallet.
     error SharedWalletController_ParticipantNotRegistered(address participant);
 
     /// @dev Thrown if the provided participant is already registered in the shared wallet.
@@ -529,7 +529,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     /// @dev Thrown if the provided wallet status is incompatible.
     error SharedWalletController_WalletStatusIncompatible(
         WalletStatus actualStatus,
-        WalletStatus compatibleStatus
+        WalletStatus expectedStatus
     );
 }
 
