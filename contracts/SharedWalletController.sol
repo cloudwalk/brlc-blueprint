@@ -36,7 +36,7 @@ contract SharedWalletController is
     using SafeCast for uint256;
 
     /**
-     * @dev Possible directions of transfers in a shared wallet for internal use.
+     * @dev Possible directions of transfers in a shared wallet (for internal use).
      *
      * The values:
      *
@@ -118,12 +118,12 @@ contract SharedWalletController is
         }
 
         walletState.status = WalletStatus.Active;
-        _incrementWalletCount();
+        _safeIncrementWalletCount($);
         emit WalletCreated(wallet);
 
         uint256 participantCount = participants.length;
         for (uint256 i = 0; i < participantCount; i++) {
-            _addParticipant(wallet, participants[i]);
+            _addParticipant(wallet, participants[i], walletState, $);
         }
     }
 
@@ -138,7 +138,8 @@ contract SharedWalletController is
      * - The wallet must have the zero balance.
      */
     function suspendWallet(address wallet) external onlyRole(ADMIN_ROLE) {
-        WalletState storage walletState = _getExistentWallet(wallet);
+        SharedWalletControllerStorage storage $ = _getStorage();
+        WalletState storage walletState = _getExistentWallet(wallet, $);
 
         if (walletState.status != WalletStatus.Active) {
             revert SharedWalletController_WalletStatusIncompatible(walletState.status, WalletStatus.Active);
@@ -161,13 +162,16 @@ contract SharedWalletController is
      * - The wallet must be suspended.
      */
     function resumeWallet(address wallet) external onlyRole(ADMIN_ROLE) {
-        WalletState storage walletState = _getExistentWallet(wallet);
+        SharedWalletControllerStorage storage $ = _getStorage();
+        WalletState storage walletState = _getExistentWallet(wallet, $);
+
         if (walletState.status != WalletStatus.Suspended) {
             revert SharedWalletController_WalletStatusIncompatible(walletState.status, WalletStatus.Suspended);
         }
         if (walletState.participants.length == 0) {
-            revert SharedWalletController_WalletHasNoParticipants(); // Add centralized check for active wallets?
+            revert SharedWalletController_WalletHasNoParticipants();
         }
+
         walletState.status = WalletStatus.Active;
         emit WalletResumed(wallet);
     }
@@ -182,14 +186,18 @@ contract SharedWalletController is
      * - The provided wallet must be suspended.
      */
     function deleteWallet(address wallet) external onlyRole(OWNER_ROLE) {
-        WalletState storage walletState = _getExistentWallet(wallet);
+        SharedWalletControllerStorage storage $ = _getStorage();
+        WalletState storage walletState = _getExistentWallet(wallet, $);
+
         if (walletState.status != WalletStatus.Suspended) {
             revert SharedWalletController_WalletStatusIncompatible(walletState.status, WalletStatus.Suspended);
         }
+
         uint256 participantCount = walletState.participants.length;
         for (uint256 i = 0; i < participantCount; i++) {
-            _removeParticipant(wallet, walletState.participants[i], walletState);
+            _removeParticipant(wallet, walletState.participants[i], walletState, $);
         }
+
         walletState.status = WalletStatus.Nonexistent;
         emit WalletDeleted(wallet);
     }
@@ -210,11 +218,12 @@ contract SharedWalletController is
         address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
-        _getExistentWallet(wallet);
+        SharedWalletControllerStorage storage $ = _getStorage();
+        WalletState storage walletState = _getExistentWallet(wallet, $);
+
         uint256 participantCount = participants.length;
         for (uint256 i = 0; i < participantCount; i++) {
-            address participant = participants[i];
-            _addParticipant(wallet, participant);
+            _addParticipant(wallet, participants[i], walletState, $);
         }
     }
 
@@ -233,14 +242,15 @@ contract SharedWalletController is
         address wallet,
         address[] calldata participants
     ) external onlyRole(ADMIN_ROLE) {
-        WalletState storage walletState = _getExistentWallet(wallet);
+        SharedWalletControllerStorage storage $ = _getStorage();
+        WalletState storage walletState = _getExistentWallet(wallet, $);
 
         uint256 participantCount = participants.length;
         for (uint256 i = 0; i < participantCount; i++) {
-            _removeParticipant(wallet, participants[i], walletState);
+            _removeParticipant(wallet, participants[i], walletState, $);
         }
 
-        if (_wouldBecomeEmptyActiveWallet(walletState)) {
+        if (walletState.status == WalletStatus.Active && walletState.participants.length == 0) {
             revert SharedWalletController_WalletWouldBecomeEmpty();
         }
     }
@@ -275,20 +285,22 @@ contract SharedWalletController is
             return;
         }
 
-        WalletStatus status = $.walletStates[from].status;
+        WalletState storage fromWalletState = $.walletStates[from];
+        WalletStatus fromStatus = fromWalletState.status;
 
-        if (status == WalletStatus.Active) {
-            _handleOutgoingTransfer(from, to, amount);
-        } else if (status == WalletStatus.Suspended) {
-            revert SharedWalletController_WalletStatusIncompatible(status, WalletStatus.Active);
+        if (fromStatus == WalletStatus.Active) {
+            _handleOutgoingTransfer(from, to, amount, fromWalletState, $);
+        } else if (fromStatus == WalletStatus.Suspended) {
+            revert SharedWalletController_WalletStatusIncompatible(fromStatus, WalletStatus.Active);
         }
 
-        status = $.walletStates[to].status;
+        WalletState storage toWalletState = $.walletStates[to];
+        WalletStatus toStatus = toWalletState.status;
 
-        if (status == WalletStatus.Active) {
-            _handleIncomingTransfer(from, to, amount);
-        } else if (status == WalletStatus.Suspended) {
-            revert SharedWalletController_WalletStatusIncompatible(status, WalletStatus.Active);
+        if (toStatus == WalletStatus.Active) {
+            _handleIncomingTransfer(from, to, amount, toWalletState, $);
+        } else if (toStatus == WalletStatus.Suspended) {
+            revert SharedWalletController_WalletStatusIncompatible(toStatus, WalletStatus.Active);
         }
     }
 
@@ -381,7 +393,6 @@ contract SharedWalletController is
             address wallet = wallets[i];
             WalletState storage walletState = $.walletStates[wallet];
 
-            // Build participant summaries array
             uint256 participantCount = walletState.participants.length;
             ParticipantSummary[] memory participantSummaries = new ParticipantSummary[](participantCount);
 
@@ -425,7 +436,7 @@ contract SharedWalletController is
     ) external view returns (WalletParticipantOverview[] memory overviews) {
         SharedWalletControllerStorage storage $ = _getStorage();
 
-        WalletParticipantPair[] memory normalizedPairs = _normalizeWalletParticipantPairs(pairs);
+        WalletParticipantPair[] memory normalizedPairs = _normalizeWalletParticipantPairs(pairs, $);
         uint256 normalizedPairCount = normalizedPairs.length;
         overviews = new WalletParticipantOverview[](normalizedPairCount);
 
@@ -436,14 +447,12 @@ contract SharedWalletController is
             ParticipantState storage participantState = walletState.participantStates[participant];
 
             overviews[i] = WalletParticipantOverview({
-                // Wallet information
                 wallet: wallet,
-                    walletStatus: walletState.status,
+                walletStatus: walletState.status,
                 walletBalance: walletState.balance,
-                // Participant information
                 participant: participant,
-                    participantStatus: participantState.status,
-                    participantBalance: participantState.balance
+                participantStatus: participantState.status,
+                participantBalance: participantState.balance
             });
         }
     }
@@ -467,17 +476,19 @@ contract SharedWalletController is
      * @dev Adds a participant to a wallet.
      * @param wallet The address of the wallet.
      * @param participant The address of the participant.
+     * @param walletState The wallet state storage reference.
+     * @param $ The shared wallet controller storage reference.
      */
     function _addParticipant(
         address wallet,
-        address participant
+        address participant,
+        WalletState storage walletState,
+        SharedWalletControllerStorage storage $
     ) internal {
         if (participant == address(0)) {
             revert SharedWalletController_ParticipantAddressZero();
         }
 
-        SharedWalletControllerStorage storage $ = _getStorage();
-        WalletState storage walletState = $.walletStates[wallet];
         ParticipantState storage participantState = walletState.participantStates[participant];
 
         if (participantState.status != ParticipantStatus.NonRegistered) {
@@ -486,7 +497,7 @@ contract SharedWalletController is
         if ($.walletStates[participant].status != WalletStatus.Nonexistent) {
             revert SharedWalletController_ParticipantIsSharedWallet();
         }
-        if (walletState.participants.length >= _getMaxParticipantsPerWallet()) {
+        if (walletState.participants.length >= MAX_PARTICIPANTS_PER_WALLET) {
             revert SharedWalletController_ParticipantCountExceedsLimit();
         }
 
@@ -507,11 +518,13 @@ contract SharedWalletController is
      * @param wallet The address of the wallet.
      * @param participant The address of the participant.
      * @param walletState The shared wallet storage reference.
+     * @param $ The shared wallet controller storage reference.
      */
     function _removeParticipant(
         address wallet,
         address participant,
-        WalletState storage walletState
+        WalletState storage walletState,
+        SharedWalletControllerStorage storage $
     ) internal {
         if (walletState.participantStates[participant].status == ParticipantStatus.NonRegistered) {
             revert SharedWalletController_ParticipantNotRegistered(participant);
@@ -521,7 +534,7 @@ contract SharedWalletController is
         }
 
         _removeParticipantFromWallet(walletState, participant);
-        _removeWalletFromParticipant(wallet, participant);
+        _removeWalletFromParticipant(wallet, participant, $);
 
         emit ParticipantRemoved(wallet, participant);
     }
@@ -535,7 +548,6 @@ contract SharedWalletController is
         WalletState storage walletState,
         address participant
     ) internal {
-        // Remove from the array and clear storage
         uint256 removedIndex = walletState.participantStates[participant].index;
         uint256 lastIndex = walletState.participants.length - 1;
         address participantWithLastIndex = walletState.participants[lastIndex];
@@ -546,51 +558,36 @@ contract SharedWalletController is
         delete walletState.participants[lastIndex];
         walletState.participants.pop();
         delete walletState.participantStates[participant];
-        }
+    }
 
     /**
      * @dev Removes a wallet from the participant's wallet list.
-     * @param participant The address of the participant.
      * @param wallet The address of the wallet to remove.
+     * @param participant The address of the participant.
+     * @param $ The shared wallet controller storage reference.
      */
-    function _removeWalletFromParticipant(address wallet, address participant) internal {
-        SharedWalletControllerStorage storage $ = _getStorage();
+    function _removeWalletFromParticipant(
+        address wallet,
+        address participant,
+        SharedWalletControllerStorage storage $
+    ) internal {
         $.participantWallets[participant].remove(wallet);
-    }
-
-    /**
-     * @dev Returns the maximum number of participants per wallet.
-     *
-     * This function is useful for testing purposes.
-     *
-     * @return The maximum number of participants per wallet.
-     */
-    function _getMaxParticipantsPerWallet() internal pure virtual returns (uint256) {
-        return MAX_PARTICIPANTS_PER_WALLET;
-    }
-
-    /**
-     * @dev Checks if removing participants would result in an empty active wallet.
-     * @param walletState The wallet state to check.
-     * @return True if the wallet would become an empty active wallet, false otherwise.
-     */
-    function _wouldBecomeEmptyActiveWallet(WalletState storage walletState) internal view returns (bool) {
-        return walletState.status == WalletStatus.Active && walletState.participants.length == 0;
     }
 
     /**
      * @dev Returns a shared wallet by its address after ensuring it exists.
      * @param wallet The address of the wallet.
+     * @param $ The shared wallet controller storage reference.
      * @return The shared wallet as a storage reference.
      */
-    function _getExistentWallet(address wallet) internal view returns (WalletState storage) {
-        SharedWalletControllerStorage storage $ = _getStorage();
-
+    function _getExistentWallet(
+        address wallet,
+        SharedWalletControllerStorage storage $
+    ) internal view returns (WalletState storage) {
         WalletState storage walletState = $.walletStates[wallet];
         if (walletState.status == WalletStatus.Nonexistent) {
             revert SharedWalletController_WalletNonexistent();
         }
-
         return walletState;
     }
 
@@ -599,15 +596,20 @@ contract SharedWalletController is
      * @param wallet The address of the wallet.
      * @param to The address of the recipient.
      * @param amount The amount of the transfer.
+     * @param walletState The wallet state storage reference.
+     * @param $ The shared wallet controller storage reference.
      */
-    function _handleOutgoingTransfer(address wallet, address to, uint256 amount) internal {
-        SharedWalletControllerStorage storage $ = _getStorage();
-        WalletState storage walletState = $.walletStates[wallet];
-
+    function _handleOutgoingTransfer(
+        address wallet,
+        address to,
+        uint256 amount,
+        WalletState storage walletState,
+        SharedWalletControllerStorage storage $
+    ) internal {
         if (walletState.participantStates[to].status == ParticipantStatus.Registered) {
-            _processDirectTransfer(wallet, to, amount, uint256(TransferDirection.Out));
+            _processDirectTransfer(wallet, to, amount, uint256(TransferDirection.Out), walletState, $);
         } else {
-            _processDistributionTransfer(wallet, amount, uint256(TransferDirection.Out));
+            _processDistributionTransfer(wallet, amount, uint256(TransferDirection.Out), walletState, $);
         }
     }
 
@@ -616,15 +618,20 @@ contract SharedWalletController is
      * @param from The address of the sender.
      * @param wallet The address of the wallet.
      * @param amount The amount of the transfer.
+     * @param walletState The wallet state storage reference.
+     * @param $ The shared wallet controller storage reference.
      */
-    function _handleIncomingTransfer(address from, address wallet, uint256 amount) internal {
-        SharedWalletControllerStorage storage $ = _getStorage();
-        WalletState storage walletState = $.walletStates[wallet];
-
+    function _handleIncomingTransfer(
+        address from,
+        address wallet,
+        uint256 amount,
+        WalletState storage walletState,
+        SharedWalletControllerStorage storage $
+    ) internal {
         if (walletState.participantStates[from].status == ParticipantStatus.Registered) {
-            _processDirectTransfer(wallet, from, amount, uint256(TransferDirection.In));
+            _processDirectTransfer(wallet, from, amount, uint256(TransferDirection.In), walletState, $);
         } else {
-            _processDistributionTransfer(wallet, amount, uint256(TransferDirection.In));
+            _processDistributionTransfer(wallet, amount, uint256(TransferDirection.In), walletState, $);
         }
     }
 
@@ -634,16 +641,17 @@ contract SharedWalletController is
      * @param participant The address of the participant.
      * @param amount The amount of the operation.
      * @param transferDirection The direction of transfer according to the {TransferDirection} enum.
+     * @param walletState The wallet state storage reference.
+     * @param $ The shared wallet controller storage reference.
      */
     function _processDirectTransfer(
         address wallet,
         address participant,
         uint256 amount,
-        uint256 transferDirection
+        uint256 transferDirection,
+        WalletState storage walletState,
+        SharedWalletControllerStorage storage $
     ) internal {
-        SharedWalletControllerStorage storage $ = _getStorage();
-
-        WalletState storage walletState = $.walletStates[wallet];
         ParticipantState storage participantState = walletState.participantStates[participant];
         uint256 oldWalletBalance = walletState.balance;
         uint256 newWalletBalance;
@@ -653,7 +661,7 @@ contract SharedWalletController is
         if (transferDirection == uint256(TransferDirection.In)) {
             newParticipantBalance = oldParticipantBalance + amount;
             newWalletBalance = oldWalletBalance + amount;
-            _increaseCombinedWalletsBalance(amount);
+            _increaseCombinedWalletsBalance(amount, $);
 
             emit Deposit(
                 wallet,
@@ -667,7 +675,7 @@ contract SharedWalletController is
             if (oldParticipantBalance < amount) {
                 revert SharedWalletController_ParticipantBalanceInsufficient();
             }
-            unchecked {
+            unchecked { // Remove unchecked?
                 newParticipantBalance = oldParticipantBalance - amount;
                 newWalletBalance = oldWalletBalance - amount;
                 $.combinedWalletsBalance -= uint64(amount);
@@ -692,22 +700,27 @@ contract SharedWalletController is
      * @param wallet The address of the wallet.
      * @param amount The amount of tokens to distribute.
      * @param transferDirection The direction of transfer according to the {TransferDirection} enum.
+     * @param walletState The wallet state storage reference.
+     * @param $ The shared wallet controller storage reference.
      */
-    function _processDistributionTransfer(address wallet, uint256 amount, uint256 transferDirection) internal {
-        SharedWalletControllerStorage storage $ = _getStorage();
-
-        WalletState storage walletState = $.walletStates[wallet];
+    function _processDistributionTransfer(
+        address wallet,
+        uint256 amount,
+        uint256 transferDirection,
+        WalletState storage walletState,
+        SharedWalletControllerStorage storage $
+    ) internal {
         uint256 oldWalletBalance = walletState.balance;
         uint256 newWalletBalance;
 
         if (transferDirection == uint256(TransferDirection.In)) {
             newWalletBalance = oldWalletBalance + amount;
-            _increaseCombinedWalletsBalance(amount);
+            _increaseCombinedWalletsBalance(amount, $);
         } else {
             if (oldWalletBalance < amount) {
                 revert SharedWalletController_WalletBalanceInsufficient();
             }
-            unchecked {
+            unchecked { // Remove unchecked?
                 newWalletBalance = oldWalletBalance - amount;
                 $.combinedWalletsBalance -= uint64(amount);
             }
@@ -737,7 +750,7 @@ contract SharedWalletController is
                     );
                 } else {
                     if (oldParticipantBalance < shares[i]) {
-                        revert SharedWalletController_SharesCalculationInvalid();
+                        revert SharedWalletController_SharesCalculationInvalid(); // Understand this part & math behind it
                     }
                     unchecked{
                         newParticipantBalance = oldParticipantBalance - shares[i];
@@ -761,29 +774,26 @@ contract SharedWalletController is
     /**
      * @dev Increases the number of existing shared wallets by 1.
      */
-    function _incrementWalletCount() internal {
-        SharedWalletControllerStorage storage $ = _getStorage();
-
-        uint256 newWalletCount = $.walletCount + 1;
-        if (newWalletCount > type(uint32).max) {
+    function _safeIncrementWalletCount(SharedWalletControllerStorage storage $) internal {
+        if ($.walletCount == type(uint32).max) {
             revert SharedWalletController_WalletCountExceedsLimit();
         }
-
-        $.walletCount = uint32(newWalletCount);
+        $.walletCount += 1;
     }
 
     /**
      * @dev Increases the combined wallets balance across all shared wallets by the given amount.
      * @param amount The amount to increase the combined balance by.
+     * @param $ The shared wallet controller storage reference.
      */
-    function _increaseCombinedWalletsBalance(uint256 amount) internal {
-        SharedWalletControllerStorage storage $ = _getStorage();
-
+    function _increaseCombinedWalletsBalance(
+        uint256 amount,
+        SharedWalletControllerStorage storage $
+    ) internal {
         uint256 newCombinedBalance = uint256($.combinedWalletsBalance) + amount;
         if (newCombinedBalance > type(uint64).max) {
             revert SharedWalletController_CombinedWalletsBalanceExceedsLimit();
         }
-
         $.combinedWalletsBalance = uint64(newCombinedBalance);
     }
 
@@ -801,7 +811,9 @@ contract SharedWalletController is
         uint256[] memory shares = new uint256[](i);
         uint256 totalBalance = walletState.balance;
         uint256 totalShares = 0;
-        uint256 lastNonZeroBalanceIndex = 0;
+        uint256 biggestShareIndex = 0;
+        uint256 biggestShareAmount = 0;
+
         if (totalBalance != 0) {
             do {
                 --i;
@@ -810,7 +822,10 @@ contract SharedWalletController is
                     uint256 share = _calculateShare(amount, participantBalance, totalBalance);
                     totalShares += share;
                     shares[i] = share;
-                    lastNonZeroBalanceIndex = i;
+                    if (share > biggestShareAmount) {
+                        biggestShareAmount = share;
+                        biggestShareIndex = i;
+                    }
                 }
             }
             while (i != 0);
@@ -824,7 +839,7 @@ contract SharedWalletController is
             while (i != 0);
         }
 
-        shares[lastNonZeroBalanceIndex] += amount - totalShares;
+        shares[biggestShareIndex] += amount - totalShares;
         return shares;
     }
 
@@ -847,12 +862,13 @@ contract SharedWalletController is
     /**
      * @dev Normalizes the wallet-participant pairs by expanding zero addresses to participants or wallets.
      * @param pairs The wallet-participant pairs to normalize.
+     * @param $ The shared wallet controller storage reference.
      * @return The normalized wallet-participant pairs.
      */
     function _normalizeWalletParticipantPairs(
-        WalletParticipantPair[] calldata pairs
+        WalletParticipantPair[] calldata pairs,
+        SharedWalletControllerStorage storage $
     ) internal view returns (WalletParticipantPair[] memory) {
-        SharedWalletControllerStorage storage $ = _getStorage();
         uint256 initialPairCount = pairs.length;
 
         // First pass: count actual pairs and validate
