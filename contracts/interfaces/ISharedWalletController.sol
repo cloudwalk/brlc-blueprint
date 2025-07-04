@@ -22,7 +22,7 @@ interface ISharedWalletControllerTypes {
         // Slot 1
         WalletStatus status;
         uint64 balance;
-        // uint184__reserved; // Reserved for future use until the end of the storage slot
+        // uint184 __reserved; // Reserved for future use until the end of the storage slot
 
         // Slot 2
         address[] participants;
@@ -51,7 +51,7 @@ interface ISharedWalletControllerTypes {
     enum WalletStatus {
         Nonexistent,
         Active,
-        Suspended // Add Deleted state? How would it work?
+        Suspended
     }
 
     /**
@@ -121,8 +121,9 @@ interface ISharedWalletControllerTypes {
      *
      * The fields:
      *
-     * - participant ------ The address of the participant.
-     * - walletSummaries -- The wallet summaries of the participant according to the {WalletSummary} struct.
+     * - participant ----- The address of the participant.
+     * - totalBalance ---- The total balance of the participant across all shared wallets.
+     * - walletSummaries - The wallet summaries of the participant according to the {WalletSummary} struct.
      */
     struct ParticipantOverview {
         address participant;
@@ -160,7 +161,7 @@ interface ISharedWalletControllerTypes {
      * Notes:
      *
      *  - 1. The zero address in the struct is used as a wildcard.
-     *  - 2. If the the wallet address is zero then all wallets with the provided participant address will be returned.
+     *  - 2. If the wallet address is zero then all wallets with the provided participant address will be returned.
      *  - 3. If the participant address is zero then all participants with the provided wallet will be returned.
      *  - 4. The wallet address and the participant address must not be zero at the same time.
      *  - 5. Replacing of the pairs with the zero addresses is called normalization.
@@ -240,13 +241,15 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
      */
     event ParticipantRemoved(address indexed wallet, address indexed participant);
 
-    // NOTE: The wallet balance operation events below have been split into separate ones because it simplifies them,
-    //       makes them more readable, adds granularity. If we need to fetch the whole history of operations,
-    //       we can use a database query like:
-    //       ```sql
-    //       SELECT * FROM logs
-    //       WHERE logs.first_topic IN (<deposit_hash>, <withdrawal_hash>, <transfer_in_hash>, <transfer_out_hash>)
-    //       ```
+    /**
+     * NOTE: The wallet balance operation events below are split into separate events for better readability
+     * and granularity. To fetch the complete history of all balance operations, use a database query like:
+     *
+     * ```sql
+     * SELECT * FROM logs
+     * WHERE logs.first_topic IN (<deposit_hash>, <withdrawal_hash>, <transfer_in_hash>, <transfer_out_hash>)
+     * ```
+     */
 
     /**
      * @dev Emitted when a participant has deposited tokens to a shared wallet.
@@ -397,7 +400,9 @@ interface ISharedWalletControllerPrimary is ISharedWalletControllerTypes {
      * @param participants The addresses of the participants to get details for.
      * @return overviews The detailed information for each participant.
      */
-    function getParticipantOverviews(address[] calldata participants) external view returns (ParticipantOverview[] memory overviews);
+    function getParticipantOverviews(
+        address[] calldata participants
+    ) external view returns (ParticipantOverview[] memory overviews);
 
     /**
      * @dev Returns all participants of a shared wallet.
@@ -481,7 +486,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
      * @dev Thrown if the shares calculation is incorrect.
      *
      * It is expected that this error is extremely rare.
-     * It can happen when the balance of a wallet equals to the transfer amount but
+     * It can happen when the balance of a wallet equals the transfer amount but
      * the shares of the amount are incorrectly distributed among participants due to rounding.
      *
      * A numerical example:
@@ -498,6 +503,9 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
 
     /// @dev Thrown if the provided token is unauthorized.
     error SharedWalletController_TokenUnauthorized();
+
+    /// @dev Thrown if the provided token address is zero.
+    error SharedWalletController_TokenAddressZero();
 
     /// @dev Thrown if the provided wallet address is zero.
     error SharedWalletController_WalletAddressZero();
@@ -527,10 +535,7 @@ interface ISharedWalletControllerErrors is ISharedWalletControllerTypes {
     error SharedWalletController_WalletWouldBecomeEmpty();
 
     /// @dev Thrown if the provided wallet status is incompatible.
-    error SharedWalletController_WalletStatusIncompatible(
-        WalletStatus actualStatus,
-        WalletStatus expectedStatus
-    );
+    error SharedWalletController_WalletStatusIncompatible(WalletStatus actualStatus, WalletStatus expectedStatus);
 }
 
 /**

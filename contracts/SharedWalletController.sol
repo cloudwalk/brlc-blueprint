@@ -73,13 +73,13 @@ contract SharedWalletController is
      */
     function initialize(address token_) external initializer {
         if (token_ == address(0)) {
-            revert SharedWalletController_WalletAddressZero();
+            revert SharedWalletController_TokenAddressZero();
         }
 
         __AccessControlExt_init_unchained();
         __PausableExt_init_unchained();
         __Rescuable_init_unchained();
-        __UUPSExt_init_unchained(); // This is needed only to avoid errors during coverage assessment
+        __UUPSExt_init_unchained(); // Required to avoid errors during test coverage assessment
 
         SharedWalletControllerStorage storage $ = _getStorage();
         $.token = token_;
@@ -99,10 +99,7 @@ contract SharedWalletController is
      * - The provided wallet address must not be zero.
      * - The provided participants array must not be empty.
      */
-    function createWallet(
-        address wallet,
-        address[] calldata participants
-    ) external onlyRole(ADMIN_ROLE) {
+    function createWallet(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
         if (wallet == address(0)) {
             revert SharedWalletController_WalletAddressZero();
         }
@@ -214,10 +211,7 @@ contract SharedWalletController is
      * - The provided participants array must not contain the zero address.
      * - The provided participants array must not contain the other shared wallet addresses.
      */
-    function addParticipants(
-        address wallet,
-        address[] calldata participants
-    ) external onlyRole(ADMIN_ROLE) {
+    function addParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
         SharedWalletControllerStorage storage $ = _getStorage();
         WalletState storage walletState = _getExistentWallet(wallet, $);
 
@@ -238,10 +232,7 @@ contract SharedWalletController is
      * - The provided participants array must not contain duplicates.
      * - The provided participants array must not contain the zero address.
      */
-    function removeParticipants(
-        address wallet,
-        address[] calldata participants
-    ) external onlyRole(ADMIN_ROLE) {
+    function removeParticipants(address wallet, address[] calldata participants) external onlyRole(ADMIN_ROLE) {
         SharedWalletControllerStorage storage $ = _getStorage();
         WalletState storage walletState = _getExistentWallet(wallet, $);
 
@@ -271,7 +262,10 @@ contract SharedWalletController is
     /**
      * @inheritdoc IERC20Hook
      *
-     * @dev Requirements:
+     * @dev Called by the ERC20 token contract after each transfer to update shared wallet states.
+     * Handles both participant-to-wallet transfers and external-to-wallet transfers with distribution.
+     *
+     * Requirements:
      *
      * - The caller must be the token contract.
      */
@@ -333,7 +327,9 @@ contract SharedWalletController is
     /**
      * @inheritdoc ISharedWalletControllerPrimary
      */
-    function getParticipantOverviews(address[] calldata participants) external view returns (ParticipantOverview[] memory overviews) {
+    function getParticipantOverviews(
+        address[] calldata participants
+    ) external view returns (ParticipantOverview[] memory overviews) {
         SharedWalletControllerStorage storage $ = _getStorage();
 
         uint256 participantCount = participants.length;
@@ -491,6 +487,7 @@ contract SharedWalletController is
 
     /**
      * @dev Increases the number of existing shared wallets by 1.
+     * @param $ The shared wallet controller storage reference.
      */
     function _safeIncrementWalletCount(SharedWalletControllerStorage storage $) internal {
         if ($.walletCount == type(uint32).max) {
@@ -567,14 +564,15 @@ contract SharedWalletController is
     }
 
     /**
-     * @dev Removes a participant from the wallet's data structures.
+     * @dev Removes a participant from the wallet's participants array and state mapping.
+     *
+     * Uses the swap-and-pop algorithm to maintain array order while avoiding gas-expensive shifts.
+     * The participant at the target index is replaced with the last participant, then the array is shortened.
+     *
      * @param walletState The shared wallet storage reference.
      * @param participant The address of the participant to remove.
      */
-    function _removeParticipantFromWallet(
-        WalletState storage walletState,
-        address participant
-    ) internal {
+    function _removeParticipantFromWallet(WalletState storage walletState, address participant) internal {
         uint256 removedIndex = walletState.participantStates[participant].index;
         uint256 lastIndex = walletState.participants.length - 1;
         address participantWithLastIndex = walletState.participants[lastIndex];
@@ -685,7 +683,7 @@ contract SharedWalletController is
             if (oldParticipantBalance < amount) {
                 revert SharedWalletController_ParticipantBalanceInsufficient();
             }
-            unchecked { // Remove unchecked?
+            unchecked {
                 newParticipantBalance = oldParticipantBalance - amount;
                 newWalletBalance = oldWalletBalance - amount;
                 $.aggregatedBalance -= uint64(amount);
@@ -730,7 +728,7 @@ contract SharedWalletController is
             if (oldWalletBalance < amount) {
                 revert SharedWalletController_WalletBalanceInsufficient();
             }
-            unchecked { // Remove unchecked?
+            unchecked {
                 newWalletBalance = oldWalletBalance - amount;
                 $.aggregatedBalance -= uint64(amount);
             }
@@ -760,9 +758,9 @@ contract SharedWalletController is
                     );
                 } else {
                     if (oldParticipantBalance < shares[i]) {
-                        revert SharedWalletController_SharesCalculationInvalid(); // Understand this part & math behind it
+                        revert SharedWalletController_SharesCalculationInvalid();
                     }
-                    unchecked{
+                    unchecked {
                         newParticipantBalance = oldParticipantBalance - shares[i];
                     }
 
@@ -786,10 +784,7 @@ contract SharedWalletController is
      * @param amount The amount to increase the aggregated balance by.
      * @param $ The shared wallet controller storage reference.
      */
-    function _increaseAggregatedBalance(
-        uint256 amount,
-        SharedWalletControllerStorage storage $
-    ) internal {
+    function _increaseAggregatedBalance(uint256 amount, SharedWalletControllerStorage storage $) internal {
         uint256 newAggregatedBalance = uint256($.aggregatedBalance) + amount;
         if (newAggregatedBalance > type(uint64).max) {
             revert SharedWalletController_AggregatedBalanceExceedsLimit();
@@ -798,10 +793,15 @@ contract SharedWalletController is
     }
 
     /**
-     * @dev Calculates the shares of the participants in the transfer.
-     * @param amount The amount of the transfer.
-     * @param walletState The shared wallet as a storage reference.
-     * @return The shares of the participants.
+     * @dev Calculates the shares of participants in a transfer based on their proportional balances.
+     *
+     * If the wallet has a balance, shares are distributed proportionally to participant balances.
+     * If the wallet has zero balance, shares are distributed equally among all participants.
+     * Any remainder due to rounding is assigned to the participant with the largest share.
+     *
+     * @param amount The amount of the transfer to distribute.
+     * @param walletState The shared wallet storage reference.
+     * @return The calculated shares for each participant in the same order as the participants array.
      */
     function _calculateParticipantShares(
         uint256 amount,
@@ -827,16 +827,14 @@ contract SharedWalletController is
                         biggestShareIndex = i;
                     }
                 }
-            }
-            while (i != 0);
+            } while (i != 0);
         } else {
             uint256 share = _calculateShare(amount, 1, i);
             totalShares = share * i;
             do {
                 --i;
                 shares[i] = share;
-            }
-            while (i != 0);
+            } while (i != 0);
         }
 
         shares[biggestShareIndex] += amount - totalShares;
@@ -844,26 +842,31 @@ contract SharedWalletController is
     }
 
     /**
-     * @dev Calculates a share of a participant in a transfer.
-     * @param amount The amount of the transfer.
-     * @param balance The balance of the participant.
-     * @param totalBalance The total balance of the shared wallet.
-     * @return The share of the participant.
+     * @dev Calculates a participant's share of a transfer amount based on their proportional balance.
+     *
+     * The calculation applies the accuracy factor to round down the result to avoid dust amounts.
+     *
+     * @param amount The total amount to distribute.
+     * @param balance The participant's balance.
+     * @param totalBalance The total balance of all participants.
+     * @return The participant's calculated share, rounded down to the accuracy factor.
      */
-    function _calculateShare(
-        uint256 amount,
-        uint256 balance,
-        uint256 totalBalance
-    ) internal pure returns (uint256) {
-        uint256 share = amount * balance / totalBalance;
+    function _calculateShare(uint256 amount, uint256 balance, uint256 totalBalance) internal pure returns (uint256) {
+        uint256 share = (amount * balance) / totalBalance;
         return (share / ACCURACY_FACTOR) * ACCURACY_FACTOR; // Round down according to the accuracy factor
     }
 
     /**
-     * @dev Normalizes the wallet-participant pairs by expanding zero addresses to participants or wallets.
-     * @param pairs The wallet-participant pairs to normalize.
+     * @dev Expands wallet-participant pairs that contain zero addresses (wildcards) into concrete pairs.
+     *
+     * Zero addresses act as wildcards:
+     * - Zero wallet address: expands to all wallets containing the specified participant
+     * - Zero participant address: expands to all participants in the specified wallet
+     * - Both specified: returns the pair as-is
+     *
+     * @param pairs The wallet-participant pairs that may contain zero address wildcards.
      * @param $ The shared wallet controller storage reference.
-     * @return The normalized wallet-participant pairs.
+     * @return The expanded pairs with all wildcards resolved to concrete addresses.
      */
     function _normalizeWalletParticipantPairs(
         WalletParticipantPair[] calldata pairs,
@@ -930,4 +933,3 @@ contract SharedWalletController is
         }
     }
 }
-

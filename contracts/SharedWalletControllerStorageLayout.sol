@@ -20,21 +20,21 @@ abstract contract SharedWalletControllerStorageLayout is ISharedWalletController
     /// @dev The maximum number of participants per wallet.
     uint256 public constant MAX_PARTICIPANTS_PER_WALLET = 100;
 
-    /// @dev The accuracy factor to rounding down the shares of the participants during transfers.
+    /// @dev The accuracy factor for rounding down the shares of participants during transfers.
     uint256 public constant ACCURACY_FACTOR = 10000;
 
     // ------------------ Storage layout -------------------------- //
 
     /**
-     * @dev The storage location for the shared wallet controller.
+     * @dev The ERC-7201 storage location for the shared wallet controller.
      *
-     * See: ERC-7201 "Namespaced Storage Layout" for more details.
+     * See ERC-7201 "Namespaced Storage Layout" for more details.
      *
-     * The value is the same as:
+     * The value is calculated as:
      *
      * ```solidity
      * string memory id = "cloudwalk.storage.SharedWalletController";
-     * bytes32 location = keccak256(abi.encode(uint256(keccak256(id) - 1)) & ~bytes32(uint256(0xff));
+     * bytes32 location = keccak256(abi.encode(uint256(keccak256(id)) - 1)) & ~bytes32(uint256(0xff));
      * ```
      */
     bytes32 private constant SHARED_WALLET_CONTROLLER_STORAGE_LOCATION =
