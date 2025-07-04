@@ -418,14 +418,6 @@ contract SharedWalletController is
 
     /**
      * @inheritdoc ISharedWalletControllerPrimary
-     */
-    function getWalletCount() external view returns (uint256) {
-        SharedWalletControllerStorage storage $ = _getStorage();
-        return $.walletCount;
-    }
-
-    /**
-     * @inheritdoc ISharedWalletControllerPrimary
      *
      * @dev Requirements:
      *
@@ -460,6 +452,14 @@ contract SharedWalletController is
     /**
      * @inheritdoc ISharedWalletControllerPrimary
      */
+    function getWalletCount() external view returns (uint256) {
+        SharedWalletControllerStorage storage $ = _getStorage();
+        return $.walletCount;
+    }
+
+    /**
+     * @inheritdoc ISharedWalletControllerPrimary
+     */
     function getAggregatedBalance() external view returns (uint256) {
         SharedWalletControllerStorage storage $ = _getStorage();
         return $.aggregatedBalance;
@@ -471,6 +471,33 @@ contract SharedWalletController is
     function proveSharedWalletController() external pure {}
 
     // ------------------ Internal functions ---------------------- //
+
+    /**
+     * @dev Returns a shared wallet by its address after ensuring it exists.
+     * @param wallet The address of the wallet.
+     * @param $ The shared wallet controller storage reference.
+     * @return The shared wallet as a storage reference.
+     */
+    function _getExistentWallet(
+        address wallet,
+        SharedWalletControllerStorage storage $
+    ) internal view returns (WalletState storage) {
+        WalletState storage walletState = $.walletStates[wallet];
+        if (walletState.status == WalletStatus.Nonexistent) {
+            revert SharedWalletController_WalletNonexistent();
+        }
+        return walletState;
+    }
+
+    /**
+     * @dev Increases the number of existing shared wallets by 1.
+     */
+    function _safeIncrementWalletCount(SharedWalletControllerStorage storage $) internal {
+        if ($.walletCount == type(uint32).max) {
+            revert SharedWalletController_WalletCountExceedsLimit();
+        }
+        $.walletCount += 1;
+    }
 
     /**
      * @dev Adds a participant to a wallet.
@@ -572,23 +599,6 @@ contract SharedWalletController is
         SharedWalletControllerStorage storage $
     ) internal {
         $.participantWallets[participant].remove(wallet);
-    }
-
-    /**
-     * @dev Returns a shared wallet by its address after ensuring it exists.
-     * @param wallet The address of the wallet.
-     * @param $ The shared wallet controller storage reference.
-     * @return The shared wallet as a storage reference.
-     */
-    function _getExistentWallet(
-        address wallet,
-        SharedWalletControllerStorage storage $
-    ) internal view returns (WalletState storage) {
-        WalletState storage walletState = $.walletStates[wallet];
-        if (walletState.status == WalletStatus.Nonexistent) {
-            revert SharedWalletController_WalletNonexistent();
-        }
-        return walletState;
     }
 
     /**
@@ -769,16 +779,6 @@ contract SharedWalletController is
                 participantState.balance = newParticipantBalance.toUint64();
             }
         }
-    }
-
-    /**
-     * @dev Increases the number of existing shared wallets by 1.
-     */
-    function _safeIncrementWalletCount(SharedWalletControllerStorage storage $) internal {
-        if ($.walletCount == type(uint32).max) {
-            revert SharedWalletController_WalletCountExceedsLimit();
-        }
-        $.walletCount += 1;
     }
 
     /**
